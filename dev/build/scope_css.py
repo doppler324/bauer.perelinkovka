@@ -55,6 +55,9 @@ res += '''
 }
 #bp-app select:not(.bp-native *) { padding-right: 30px !important; }
 #bp-app .bx-btn { line-height: 1.4 !important; height: auto !important; }
+/* ссылки в строках родного списка Битрикса — стандартный синий, а не цвет ссылок модуля */
+#bp-app .bp-native .adm-list-table-row .adm-list-table-cell a { color: #2067b0; text-decoration: none; }
+#bp-app .bp-native .adm-list-table-row .adm-list-table-cell a:hover { color: #2067b0; text-decoration: underline; }
 #bp-app input[type=checkbox], #bp-app input[type=radio] { height: auto !important; min-height: 0 !important; padding: 0 !important; }
 '''
 (root / 'admin.css').write_text(res, encoding='utf-8')
