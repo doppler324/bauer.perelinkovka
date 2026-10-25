@@ -45,6 +45,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && !check_bitrix_sessid()) {
 } else {
     $settingsUrl = '/bitrix/admin/settings.php?mid=bauer.perelinkovka&lang=' . LANGUAGE_ID . '&back_url_settings=' . urlencode('/bitrix/admin/bauer_perelinkovka.php?lang=' . LANGUAGE_ID);
     ?>
+    <?php
+    // скопированные в /bitrix файлы должны быть свежими: проверяем по метке в progress.js
+    $bpJsFile = $_SERVER['DOCUMENT_ROOT'] . '/bitrix/js/bauer.perelinkovka/progress.js';
+    if (!is_file($bpJsFile) || strpos((string)file_get_contents($bpJsFile), 'bpRunEmbIndex') === false) {
+        CAdminMessage::ShowMessage(['MESSAGE' => 'Файлы модуля в /bitrix устарели', 'DETAILS' => 'Выполните update.sh в папке модуля и обновите страницу (Ctrl+F5): часть кнопок работает со старыми скриптами неверно.', 'TYPE' => 'ERROR', 'HTML' => true]);
+    }
+    ?>
     <div id="bp-app">
         <?php bp_render_menus($tab, $settingsUrl); ?>
         <div class="bx-content">
