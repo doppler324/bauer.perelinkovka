@@ -27,7 +27,9 @@ $tab = bp_tab($_GET['tab'] ?? null);
 [$section, $title] = bp_section_titles($tab);
 
 $APPLICATION->SetTitle('Перелинковка: ' . $title);
-$APPLICATION->SetAdditionalCSS('/bitrix/css/bauer.perelinkovka/admin.css');
+// версия по времени файла, чтобы браузер не держал старый admin.css после обновления
+$bpCss = '/bitrix/css/bauer.perelinkovka/admin.css';
+$APPLICATION->SetAdditionalCSS($bpCss . '?v=' . (int)@filemtime($_SERVER['DOCUMENT_ROOT'] . $bpCss));
 $APPLICATION->AddHeadScript('/bitrix/js/bauer.perelinkovka/tablekit.js');
 
 // список статей на CAdminList строится до prolog_admin_after (CheckListMode)
