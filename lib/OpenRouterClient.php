@@ -79,6 +79,16 @@ class OpenRouterClient implements AiClientInterface
     }
 
     /** Настройки curl для запросов через прокси (http://host:port, socks5://user:pass@host:port); пусто — напрямую. */
+    /** Описание прокси для диагностики: без логина и пароля. */
+    public function proxyLabel(): string
+    {
+        if ($this->proxy === '') {
+            return 'прокси НЕ задан, запрос идёт напрямую';
+        }
+        $p = parse_url($this->proxy);
+        return 'через прокси ' . ($p['scheme'] ?? 'http') . '://' . ($p['host'] ?? '?') . (isset($p['port']) ? ':' . $p['port'] : '');
+    }
+
     private function proxyOptions(): array
     {
         return $this->proxy === '' ? [] : [CURLOPT_PROXY => $this->proxy];
@@ -134,7 +144,7 @@ class OpenRouterClient implements AiClientInterface
                 $errorMsg = mb_substr(trim(strip_tags((string)$response)), 0, 300);
             }
             $model = $data['model'] ?? '';
-            throw new \RuntimeException('OpenRouter API error: HTTP ' . $httpCode . ($errorMsg !== '' ? ' — ' . $errorMsg : '') . ($model !== '' ? ' (модель ' . $model . ')' : ''));
+            throw new \RuntimeException('OpenRouter API error: HTTP ' . $httpCode . ($errorMsg !== '' ? ' — ' . $errorMsg : '') . ($model !== '' ? ' (модель ' . $model . ')' : '') . '; ' . $this->proxyLabel());
         }
 
         return $result;
