@@ -125,7 +125,8 @@ $embService = \Bauer\Perelinkovka\Env::semantic(null, true);
         <div class="bx-notification bx-notification-success">✅ Расчёт завершён: новых векторов — <?= (int)$embNew ?> из <?= (int)$embAll ?> целей</div>
     <?php endif; ?>
     <p class="hint" style="margin:0 0 10px;">Ключ OpenRouter: <?= $embKey ? '<b>задан</b>' : '<b style="color:#b91c1c;">не задан</b> — укажите его в настройках модуля (Настройки продукта → Модули → Перелинковка)' ?>.
-        Рассчитано векторов: <b><?= $embService ? (int)$embService->indexedCount() : 0 ?></b>. Пересчитываются только новые и изменённые цели; перед запуском показывается оценка стоимости.</p>
-    <button type="button" class="bx-btn bx-btn-primary" <?= $embKey ? '' : 'disabled' ?>
+        Модель для расчёта (сохранённая): <b><?= $h($embService ? $embService->model() : ($anchorSettings['embedding_model'] ?? 'openai/text-embedding-3-small')) ?></b>.
+        Рассчитано векторов: <b><?= $embService ? (int)$embService->indexedCount() : 0 ?></b> (при смене модели цели пересчитываются заново). Пересчитываются только новые и изменённые цели; перед запуском показывается оценка стоимости.</p>
+    <button type="button" id="embIndexBtn" data-model="<?= $h($embService ? $embService->model() : '') ?>" class="bx-btn bx-btn-primary" <?= $embKey ? '' : 'disabled' ?>
         onclick="if (window.bpRunEmbIndex) { bpRunEmbIndex(); } else { alert('Файл progress.js устарел: выполните update.sh и обновите страницу (Ctrl+F5).'); }">Рассчитать векторы целей</button>
 </form>

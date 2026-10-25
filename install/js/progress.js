@@ -192,11 +192,17 @@
 
     // ---------- Эмбеддинги целей ----------
     function runEmbIndex() {
+        // поле модели на странице должно совпадать с сохранённой: расчёт идёт по сохранённым настройкам
+        var btn = document.getElementById('embIndexBtn'), field = document.querySelector('input[name="embedding_model"]');
+        if (btn && field && btn.getAttribute('data-model') !== field.value.trim()) {
+            alert('Модель в поле («' + field.value.trim() + '») не сохранена, расчёт идёт по сохранённой («' + btn.getAttribute('data-model') + '»). Нажмите «Сохранить» и запустите расчёт снова.');
+            return;
+        }
         var p = new Panel('Расчёт эмбеддингов целей', ['Подготовка', 'Расчёт векторов', 'Готово']);
         api({step: 'emb_init'}).then(function (init) {
             var keys = init.keys, i = 0, embedded = 0, tokens = 0;
             if (!keys.length) { p.close(); alert('Нет целей: проверьте настройки анкоров.'); return; }
-            if (!confirm('Целей: ' + keys.length + '. Оценка: около ' + init.tokens + ' токенов, ' + init.cost + ' $ для text-embedding-3-small (пересчитываются только новые и изменённые). Продолжить?')) { p.close(); return; }
+            if (!confirm('Модель: ' + init.model + '. Целей: ' + keys.length + '. Оценка: около ' + init.tokens + ' токенов, ' + init.cost + ' $ для text-embedding-3-small (пересчитываются только новые и изменённые). Продолжить?')) { p.close(); return; }
             p.stage(1);
             (function step() {
                 if (p.cancelled) { return finish(); }

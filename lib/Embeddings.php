@@ -27,6 +27,11 @@ class Embeddings
     }
 
     /** Текст цели для вектора: название и начало описания. */
+    public function model(): string
+    {
+        return $this->model;
+    }
+
     public static function targetText(array $t): string
     {
         $text = trim((string)($t['name'] ?? ''));

@@ -123,7 +123,7 @@ try {
             foreach ($targets as $t) {
                 $tokens += \Bauer\Perelinkovka\Embeddings::estimateTokens(\Bauer\Perelinkovka\Embeddings::targetText($t));
             }
-            $out(['keys' => array_map([\Bauer\Perelinkovka\Embeddings::class, 'key'], $targets), 'tokens' => $tokens,
+            $out(['model' => $emb->model(), 'keys' => array_map([\Bauer\Perelinkovka\Embeddings::class, 'key'], $targets), 'tokens' => $tokens,
                 'cost' => round($tokens / 1e6 * \Bauer\Perelinkovka\Embeddings::PRICE_PER_MTOK, 3)]);
             exit;
         }
