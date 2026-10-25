@@ -18,7 +18,10 @@ if (!$USER->IsAdmin()) {
     $deny('Доступ запрещён', 403);
 }
 if (($_SERVER['REQUEST_METHOD'] ?? '') !== 'POST' || !check_bitrix_sessid()) {
-    $deny('Сессия устарела, обновите страницу', 400);
+    // sessid мог смениться за время долгой операции: отдаём свежий, браузер повторит запрос сам
+    http_response_code(400);
+    echo json_encode(['ok' => false, 'error' => 'Сессия устарела, обновите страницу', 'sessid' => bitrix_sessid()], JSON_UNESCAPED_UNICODE);
+    exit;
 }
 if (!\Bitrix\Main\Loader::includeModule('bauer.perelinkovka') || !\Bitrix\Main\Loader::includeModule('iblock')) {
     $deny('Модуль не подключён', 500);

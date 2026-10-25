@@ -78,7 +78,7 @@
         return t;
     }
 
-    function api(params) {
+    function api(params, retried) {
         var body = new URLSearchParams();
         if (window.BP_SESSID) { body.append('sessid', window.BP_SESSID); }
         Object.keys(params).forEach(function (k) {
@@ -92,7 +92,11 @@
                     throw new Error('Сервер вернул не JSON (HTTP ' + r.status + ', ' + t.length + ' байт): ' + plain.slice(0, 150) + (plain.length > 300 ? ' … ' + plain.slice(-150) : ''));
                 }
             });
-        }).then(function (j) { if (!j.ok) { throw new Error(j.error || 'ошибка'); } return j; });
+        }).then(function (j) {
+            if (!j.ok && j.sessid && !retried) { window.BP_SESSID = j.sessid; return api(params, true); }
+            if (!j.ok) { throw new Error(j.error || 'ошибка'); }
+            return j;
+        });
     }
 
     function formParams(form) {
