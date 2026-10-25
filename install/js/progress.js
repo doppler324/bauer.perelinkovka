@@ -177,6 +177,26 @@
         }
     }
 
+    // ---------- Эмбеддинги целей ----------
+    function runEmbIndex() {
+        var p = new Panel('Расчёт эмбеддингов целей', ['Подготовка', 'Расчёт векторов', 'Готово']);
+        api({step: 'emb_init'}).then(function (init) {
+            var keys = init.keys, i = 0, embedded = 0, tokens = 0;
+            if (!keys.length) { p.close(); alert('Нет целей: проверьте настройки анкоров.'); return; }
+            if (!confirm('Целей: ' + keys.length + '. Оценка: около ' + init.tokens + ' токенов, ' + init.cost + ' $ для text-embedding-3-small (пересчитываются только новые и изменённые). Продолжить?')) { p.close(); return; }
+            p.stage(1);
+            (function step() {
+                if (p.cancelled) { return finish(); }
+                api({step: 'emb_index', keys: keys.slice(i, i + 48)}).then(function (r) {
+                    embedded += r.embedded; tokens += r.tokens; i += 48;
+                    p.set(Math.min(i, keys.length), keys.length, 'Обработано целей: ' + Math.min(i, keys.length) + ' из ' + keys.length + ' · рассчитано новых: ' + embedded);
+                    if (i >= keys.length) { finish(); } else { step(); }
+                }).catch(function (e) { p.fail(e.message); });
+            })();
+            function finish() { p.stage(2); p.close(); bpNav('?tab=anchor_settings&emb_done=' + embedded + '_' + keys.length); }
+        }).catch(function (e) { p.fail(e.message); });
+    }
+
     // Перехватываем отправку форм раньше общего ajaxnav
     document.addEventListener('submit', function (e) {
         var f = e.target;
@@ -186,6 +206,8 @@
             e.preventDefault(); e.stopImmediatePropagation(); runLinks(f, act);
         } else if (f.id === 'anchorsPlanForm') {
             e.preventDefault(); e.stopImmediatePropagation(); runAnchorsPlan(f);
+        } else if (f.id === 'embIndexForm') {
+            e.preventDefault(); e.stopImmediatePropagation(); runEmbIndex();
         } else if (f.id === 'anchorsApplyForm') {
             e.preventDefault(); e.stopImmediatePropagation(); runAnchorsApply(f);
         }

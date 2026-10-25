@@ -69,7 +69,9 @@ if ($article) {
             $anchorMsg = 'Ничего не выбрано или подходящих мест нет.';
         }
     }
-    $matches = $anchorEngine->process($currentText, $targets)['matches'];
+    $processed = $anchorEngine->process($currentText, $targets);
+    $matches = $processed['matches'];
+    $semanticNotice = $processed['notice'] ?? '';
 }
 
 // уже установленные в текст ссылки (<a data-bp>)
@@ -273,6 +275,8 @@ sort($pageNums);
 <?php endif; ?>
 
 <div id="artMain">
+<?php $hasScore = (bool)array_filter($matches ?? [], fn($m) => ($m['score'] ?? null) !== null); ?>
+<?php if (!empty($semanticNotice)): ?><div class="bx-notification bx-notification-warning"><?= $h($semanticNotice) ?></div><?php endif; ?>
 <?php if (!$article): ?>
 <div class="bx-notification bx-notification-warning">Выберите статью в списке выше: ссылки для неё будут подобраны после выбора.</div>
 <?php else: ?>
@@ -290,7 +294,7 @@ sort($pageNums);
             </div>
         </div>
         <table class="bx-table">
-            <thead><tr><th style="width:30px;"><input type="checkbox" class="select-all" id="anchorsAll" title="Выбрать все" <?= $afterApply ? '' : 'checked' ?>></th><th>Цель</th><th>Анкор</th><th>Источник фразы</th><th>Контекст</th></tr></thead>
+            <thead><tr><th style="width:30px;"><input type="checkbox" class="select-all" id="anchorsAll" title="Выбрать все" <?= $afterApply ? '' : 'checked' ?>></th><th>Цель</th><th>Анкор</th><th>Источник фразы</th><?= $hasScore ? '<th>Близость</th>' : '' ?><th>Контекст</th></tr></thead>
             <tbody>
             <?php foreach ($installed as $in): ?>
                 <tr style="background:#f0fdf4;">
@@ -301,11 +305,12 @@ sort($pageNums);
                     </td>
                     <td><b><?= $h($in['anchor']) ?></b></td>
                     <td><span class="badge badge-related" style="background:#16a34a;color:#fff;">✓ установлена</span></td>
+                    <?php if ($hasScore): ?><td></td><?php endif; ?>
                     <td style="color:#666;">ссылка уже есть в тексте статьи</td>
                 </tr>
             <?php endforeach; ?>
             <?php if (!$matches && !$installed): ?>
-                <tr><td colspan="5" style="text-align:center;padding:30px;color:#999;">Подходящих мест не найдено</td></tr>
+                <tr><td colspan="<?= $hasScore ? 6 : 5 ?>" style="text-align:center;padding:30px;color:#999;">Подходящих мест не найдено</td></tr>
             <?php endif; ?>
             <?php foreach ($matches as $m): ?>
                 <tr>
@@ -316,6 +321,7 @@ sort($pageNums);
                     </td>
                     <td><b><?= $h($m['anchor']) ?></b></td>
                     <td><span class="badge badge-related"><?= $h($m['source']) ?></span></td>
+                    <?php if ($hasScore): ?><td><?= $m['score'] !== null ? number_format((float)$m['score'], 2) : '—' ?></td><?php endif; ?>
                     <td style="color:#666;">…<?= $h($m['context']['left']) ?><mark><?= $h($m['context']['match']) ?></mark><?= $h($m['context']['right']) ?>…</td>
                 </tr>
             <?php endforeach; ?>

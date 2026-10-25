@@ -17,6 +17,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['save_anchor_settings'
         'use_keywords'          => !empty($_POST['use_keywords']),
         'use_synonyms'          => !empty($_POST['use_synonyms']),
         'max_part_words'        => max(1, min(5, (int)($_POST['max_part_words'] ?? 3))),
+        'use_embeddings'        => !empty($_POST['use_embeddings']),
+        'embedding_model'       => trim((string)($_POST['embedding_model'] ?? '')) ?: 'openai/text-embedding-3-small',
+        'top_targets'           => max(5, min(500, (int)($_POST['top_targets'] ?? 60))),
+        'min_cosine'            => max(0, min(1, (float)str_replace(',', '.', (string)($_POST['min_cosine'] ?? 0.3)))),
         'min_target_overlap'    => max(0, min(1, (float)str_replace(',', '.', (string)($_POST['min_target_overlap'] ?? 0.5)))),
         'max_word_df'           => max(0, min(1, (float)str_replace(',', '.', (string)($_POST['max_word_df'] ?? 0.02)))),
         'min_part_words'        => max(1, min(5, (int)($_POST['min_part_words'] ?? 2))),
@@ -96,6 +100,31 @@ $chk = fn($k) => !empty($anchorSettings[$k]) ? 'checked' : '';
         <div class="bx-settings-row"><span class="hint" style="margin-left:0;">Адреса ссылок берутся из настроек инфоблока (DETAIL_PAGE_URL / SECTION_PAGE_URL).</span></div>
     </div>
 
+    <div class="bx-settings-section">
+        <h3>Смысловой подбор (эмбеддинги)</h3>
+        <div class="bx-settings-row"><label>Использовать эмбеддинги</label><input type="checkbox" name="use_embeddings" value="1" <?= $chk('use_embeddings') ?>>
+            <span class="hint">берутся цели, ближайшие по смыслу к статье, а ссылка ставится в самый близкий по смыслу абзац; без включения работает поиск по словам</span></div>
+        <div class="bx-settings-row"><label>Модель эмбеддингов</label><input type="text" name="embedding_model" value="<?= $h($anchorSettings['embedding_model'] ?? 'openai/text-embedding-3-small') ?>" size="36">
+            <span class="hint">OpenRouter; при смене модели векторы целей нужно рассчитать заново</span></div>
+        <div class="bx-settings-row"><label>Сколько целей брать для статьи</label><input type="number" name="top_targets" min="5" max="500" value="<?= (int)($anchorSettings['top_targets'] ?? 60) ?>"></div>
+        <div class="bx-settings-row"><label>Мин. близость абзаца и цели</label><input type="text" name="min_cosine" value="<?= $h($anchorSettings['min_cosine'] ?? 0.3) ?>" size="5">
+            <span class="hint">0…1; в предпросмотре у каждой ссылки показана близость, подберите порог по ней (обычно 0.25–0.45)</span></div>
+    </div>
+
     <button type="submit" class="bx-btn bx-btn-primary">Сохранить</button>
     <a href="?tab=anchors" class="bx-btn">К расстановке анкоров</a>
+</form>
+
+<?php
+$embKey = \Bauer\Perelinkovka\Env::apiKey() !== '';
+$embService = \Bauer\Perelinkovka\Env::semantic(null, true);
+?>
+<form method="post" id="embIndexForm" class="bx-settings-section" style="margin-top:16px;" action="?tab=anchor_settings">
+    <h3>Векторы целей</h3>
+    <?php if (!empty($_GET['emb_done'])): [$embNew, $embAll] = array_pad(explode('_', (string)$_GET['emb_done']), 2, 0); ?>
+        <div class="bx-notification bx-notification-success">✅ Расчёт завершён: новых векторов — <?= (int)$embNew ?> из <?= (int)$embAll ?> целей</div>
+    <?php endif; ?>
+    <p class="hint" style="margin:0 0 10px;">Ключ OpenRouter: <?= $embKey ? '<b>задан</b>' : '<b style="color:#b91c1c;">не задан</b> — укажите его в настройках модуля (Настройки продукта → Модули → Перелинковка)' ?>.
+        Рассчитано векторов: <b><?= $embService ? (int)$embService->indexedCount() : 0 ?></b>. Пересчитываются только новые и изменённые цели; перед запуском показывается оценка стоимости.</p>
+    <button type="submit" class="bx-btn bx-btn-primary" <?= $embKey ? '' : 'disabled' ?>>Рассчитать векторы целей</button>
 </form>

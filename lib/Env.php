@@ -146,13 +146,42 @@ class Env
         return $targets;
     }
 
+    /** Ключ OpenRouter: в Битриксе из настроек модуля, в тестовой оболочке — константа OPENROUTER_API_KEY. */
+    public static function apiKey(): string
+    {
+        if (self::$mode === 'bitrix') {
+            $key = trim((string)\Bitrix\Main\Config\Option::get('bauer.perelinkovka', 'openrouter_api_key', ''));
+            if ($key !== '') {
+                return $key;
+            }
+        }
+        return defined('OPENROUTER_API_KEY') ? (string)OPENROUTER_API_KEY : '';
+    }
+
+    /**
+     * Сервис эмбеддингов. Без $force — только если включён в настройках анкоров и задан ключ;
+     * с $force (расчёт векторов целей) — независимо от флага.
+     */
+    public static function semantic(?array $options = null, bool $force = false): ?Embeddings
+    {
+        $o = $options ?? self::anchorOptions();
+        $key = self::apiKey();
+        if ((!$force && empty($o['use_embeddings'])) || $key === '') {
+            return null;
+        }
+        $model = trim((string)($o['embedding_model'] ?? '')) ?: 'openai/text-embedding-3-small';
+        $client = new OpenRouterClient(['api_key' => $key, 'embedding_model' => $model, 'timeout' => 60]);
+        $store = new VectorStore(self::$mode === 'bitrix' ? null : self::$dataDir . '/vectors.json');
+        return new Embeddings($client, $store, $model);
+    }
+
     /** Движок анкоров со всеми нужными данными. */
     public static function anchorEngine(array $override = [], bool $cached = false): AnchorEngine
     {
         $class = $cached ? CachedAnchorEngine::class : AnchorEngine::class;
         return new $class(
             self::synonyms(),
-            array_replace(self::anchorOptions(), $override),
+            array_replace(self::anchorOptions(), ['semantic' => self::semantic()], $override),
             self::$provider->getIBlocks(),
             self::$provider->getSections()
         );

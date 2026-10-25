@@ -24,6 +24,9 @@ class AnchorEngine
         'min_part_words'    => 2,     // части названия короче этого числа слов не берём (однословные слишком общие)
         'min_target_overlap' => 0.5,  // доля значимых слов названия цели, которые должны встречаться в статье, чтобы брать части названия (0 — не проверять)
         'max_word_df'       => 0.02,  // анкор из части названия должен содержать слово, встречающееся не более чем в такой доле названий целей (0 — не проверять)
+        'semantic'          => null,  // Embeddings: смысловая близость абзацев и целей (включается в Env::anchorEngine)
+        'top_targets'       => 60,    // сколько ближайших по смыслу целей брать для статьи
+        'min_cosine'        => 0.30,  // минимальная близость абзаца и цели, чтобы поставить ссылку в этом абзаце
         'max_part_targets'  => 3,     // часть названия, встречающаяся в названиях более чем N целей, неоднозначна и пропускается (0 — выкл.)
         'min_word_len'      => 4,
         'max_links_per_article' => 0, // 0 — без ограничения
@@ -191,6 +194,50 @@ class AnchorEngine
         $dfLimit = max(3, (int)ceil((float)$this->opt['max_word_df'] * max(1, count($targets))));
         $minOverlap = (float)$this->opt['min_target_overlap'];
 
+        // смысловой отбор: цели ближе всего к статье, а ссылка — в самый близкий по смыслу абзац
+        $notice = '';
+        $blockVec = [];
+        $targetVec = [];
+        $semantic = $this->opt['semantic'];
+        if ($semantic instanceof Embeddings) {
+            try {
+                $blocks = [];
+                foreach ($textNodes as $info) {
+                    $blocks[$info['block']] = ($blocks[$info['block']] ?? '') . ' ' . $info['node']->nodeValue;
+                }
+                $blocks = array_filter(array_map('trim', $blocks), fn($t) => mb_strlen($t) >= 40);
+                $targetVec = $semantic->targetVectors($targets);
+                if (!$targetVec) {
+                    $notice = 'Векторы целей не рассчитаны: на вкладке «Настройки» запустите расчёт эмбеддингов.';
+                } elseif ($blocks) {
+                    $vecs = $semantic->embedTexts(array_values($blocks));
+                    $blockVec = array_filter(array_combine(array_keys($blocks), $vecs));
+                }
+            } catch (\Throwable $e) {
+                $notice = 'Эмбеддинги недоступны, использован поиск по словам: ' . $e->getMessage();
+                $blockVec = [];
+            }
+        }
+        $semanticOn = (bool)$blockVec;
+        if ($semanticOn) {
+            $centroid = Embeddings::normalize(array_map('array_sum', array_map(null, ...array_values($blockVec))));
+            $rank = [];
+            foreach ($targets as $ti => $t) {
+                $v = $targetVec[Embeddings::key($t)] ?? null;
+                $manual = !empty($this->opt['manual_anchors'][($t['type'] ?? 'element') . ':' . (int)$t['id']]);
+                if ($v || $manual) {
+                    $rank[$ti] = $v ? Embeddings::dot($centroid, $v) : 1.0;
+                }
+            }
+            arsort($rank);
+            $ranked = [];
+            foreach (array_slice($rank, 0, max(1, (int)$this->opt['top_targets']), true) as $ti => $_) {
+                $ranked[] = $targets[$ti];
+            }
+            $targets = $ranked;
+        }
+        $minCos = (float)$this->opt['min_cosine'];
+
         $matches = [];
         $usedAnchors = [];
         $limit = (int)$this->opt['max_links_per_article'];
@@ -221,7 +268,16 @@ class AnchorEngine
             }
             // тематическая связь: значимые слова названия цели должны встречаться в статье
             $topical = true;
-            if ($minOverlap > 0) {
+            // близость абзацев к этой цели
+            $blockScores = null;
+            if ($semanticOn && isset($targetVec[Embeddings::key($target)])) {
+                $blockScores = [];
+                $tv = Embeddings::floats($targetVec[Embeddings::key($target)]);
+                foreach ($blockVec as $b => $bv) {
+                    $blockScores[$b] = Embeddings::dot($tv, $bv);
+                }
+            }
+            if ($minOverlap > 0 && !$semanticOn) {
                 $sig = $this->significantStems((string)($target['name'] ?? ''));
                 if ($sig) {
                     $hits = count(array_filter($sig, fn($st) => isset($stemSet[$st])));
@@ -249,7 +305,7 @@ class AnchorEngine
                         continue 2;
                     }
                 }
-                $hit = $this->findPhrase($textNodes, $ph['stems'], $usedBlocks, $wordCache);
+                $hit = $this->findPhrase($textNodes, $ph['stems'], $usedBlocks, $wordCache, $blockScores, $minCos);
                 if (!$hit) {
                     continue;
                 }
@@ -273,6 +329,7 @@ class AnchorEngine
                     'anchor'      => $anchor,
                     'phrase'      => $ph['phrase'],
                     'source'      => $ph['source'],
+                    'score'       => $blockScores !== null ? round($blockScores[$block] ?? 0, 3) : null,
                     'context'     => [
                         'left'  => mb_strcut($text, max(0, $start - 50), $start - max(0, $start - 50), 'UTF-8'),
                         'match' => $anchor,
@@ -303,7 +360,7 @@ class AnchorEngine
         foreach ($root->childNodes as $child) {
             $out .= $dom->saveHTML($child);
         }
-        return ['html' => $apply ? $out : $html, 'matches' => $matches];
+        return ['html' => $apply ? $out : $html, 'matches' => $matches, 'notice' => $notice];
     }
 
     /**
@@ -413,9 +470,11 @@ class AnchorEngine
         return $stats;
     }
 
-    private function findPhrase(array $textNodes, array $stems, array $usedBlocks, array &$wordCache): ?array
+    private function findPhrase(array $textNodes, array $stems, array $usedBlocks, array &$wordCache, ?array $blockScores = null, float $minCos = 0.0): ?array
     {
         $n = count($stems);
+        $best = null;
+        $bestScore = -1.0;
         foreach ($textNodes as $ni => $info) {
             if (isset($usedBlocks[$info['block']])) {
                 continue;
@@ -436,10 +495,20 @@ class AnchorEngine
                     }
                 }
                 if ($j === $n) {
-                    return [$ni, $words[$i]['start'], $words[$i + $n - 1]['end'], $info['block']];
+                    $hit = [$ni, $words[$i]['start'], $words[$i + $n - 1]['end'], $info['block']];
+                    if ($blockScores === null) {
+                        return $hit;
+                    }
+                    // со смысловой оценкой берём вхождение в самом близком абзаце, не ниже порога
+                    $sc = $blockScores[$info['block']] ?? -1.0;
+                    if ($sc >= $minCos && $sc > $bestScore) {
+                        $best = $hit;
+                        $bestScore = $sc;
+                    }
+                    break; // одного вхождения на текстовый узел достаточно
                 }
             }
         }
-        return null;
+        return $best;
     }
 }

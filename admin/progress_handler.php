@@ -102,6 +102,44 @@ try {
         $out(['applied' => $r['applied'], 'articles' => $r['articles']]);
         exit;
     }
+    // ---------- Эмбеддинги целей: расчёт векторов порциями ----------
+    if (in_array($step, ['emb_init', 'emb_index'], true)) {
+        $emb = \Bauer\Perelinkovka\Env::semantic(null, true);
+        if (!$emb) {
+            $fail('Не задан ключ OpenRouter: Настройки продукта → Модули → Перелинковка');
+        }
+        if ($step === 'emb_init') {
+            $targets = \Bauer\Perelinkovka\Env::anchorTargets();
+            $tokens = 0;
+            foreach ($targets as $t) {
+                $tokens += \Bauer\Perelinkovka\Embeddings::estimateTokens(\Bauer\Perelinkovka\Embeddings::targetText($t));
+            }
+            $out(['keys' => array_map([\Bauer\Perelinkovka\Embeddings::class, 'key'], $targets), 'tokens' => $tokens,
+                'cost' => round($tokens / 1e6 * \Bauer\Perelinkovka\Embeddings::PRICE_PER_MTOK, 3)]);
+            exit;
+        }
+        $ids = ['element' => [], 'section' => []];
+        foreach ((array)($_POST['keys'] ?? []) as $k) {
+            [$type, $id] = array_pad(explode(':', (string)$k, 2), 2, '');
+            if (isset($ids[$type]) && (int)$id > 0) {
+                $ids[$type][] = (int)$id;
+            }
+        }
+        $targets = [];
+        if ($ids['element']) {
+            foreach ($dp->getElements(['id' => $ids['element']]) as $e) {
+                $targets[] = $e + ['type' => 'element'];
+            }
+        }
+        if ($ids['section']) {
+            foreach ($dp->getSections(['id' => $ids['section']]) as $sec) {
+                $targets[] = $sec + ['type' => 'section'];
+            }
+        }
+        $r = $emb->indexTargets($targets);
+        $out(['embedded' => $r['embedded'], 'skipped' => $r['skipped'], 'tokens' => $r['tokens']]);
+        exit;
+    }
     $fail('Неизвестный шаг');
 } catch (\Throwable $e) {
     $fail($e->getMessage());
