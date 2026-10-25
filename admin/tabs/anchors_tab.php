@@ -218,7 +218,8 @@ $pickUrl = fn(int $id) => '?tab=anchors&article_iblock=' . $articleIblockId . '&
             if (e.key === 'Enter') { e.preventDefault(); var f = list.querySelector('.art-picker__item:not([hidden])'); if (f) load(f.href, false); }
         });
         var ib = picker.querySelector('select[name=article_iblock]');
-        ib.onchange = function () { load('?tab=anchors&article_iblock=' + ib.value, true); };
+        // смена инфоблока — обычная загрузка страницы, чтобы список статей точно обновился
+        ib.onchange = function () { location.href = '?tab=anchors&article_iblock=' + encodeURIComponent(ib.value); };
     }
     picker.addEventListener('click', function (e) {
         var a = e.target.closest('a.art-picker__item, .art-picker__foot a');
