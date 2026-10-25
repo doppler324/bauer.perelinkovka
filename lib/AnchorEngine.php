@@ -22,6 +22,8 @@ class AnchorEngine
         'use_synonyms'      => true,
         'max_part_words'    => 3,
         'min_part_words'    => 2,     // части названия короче этого числа слов не берём (однословные слишком общие)
+        'min_target_overlap' => 0.5,  // доля значимых слов названия цели, которые должны встречаться в статье, чтобы брать части названия (0 — не проверять)
+        'max_word_df'       => 0.02,  // анкор из части названия должен содержать слово, встречающееся не более чем в такой доле названий целей (0 — не проверять)
         'max_part_targets'  => 3,     // часть названия, встречающаяся в названиях более чем N целей, неоднозначна и пропускается (0 — выкл.)
         'min_word_len'      => 4,
         'max_links_per_article' => 0, // 0 — без ограничения
@@ -39,12 +41,12 @@ class AnchorEngine
     /** Служебные слова, которых не может быть единственным смыслом анкора (всегда, помимо настройки stop_words). */
     private const COMMON_WORDS = ['и', 'не', 'на', 'в', 'с', 'по', 'как', 'что', 'это', 'так', 'или', 'для', 'при', 'без', 'его', 'она', 'они',
         'все', 'вы', 'мы', 'из', 'от', 'до', 'за', 'но', 'же', 'бы', 'то', 'ли', 'да', 'нет', 'про', 'над', 'под', 'чем', 'чтобы', 'если',
-        'когда', 'где', 'почему', 'какой', 'можно', 'нужно', 'очень', 'часто', 'также', 'только', 'еще', 'ещё', 'уже', 'себя', 'свой'];
+        'когда', 'где', 'почему', 'после', 'между', 'чаще', 'всего', 'лучше', 'больше', 'более', 'зачем', 'какие', 'каким', 'какой', 'можно', 'нужно', 'очень', 'часто', 'также', 'только', 'еще', 'ещё', 'уже', 'себя', 'свой'];
 
     /** @var array<string,array> фразы целей по "тип:id" (на время жизни объекта) */
     private array $phraseCache = [];
     /** @var array{key:string,freq:array<string,int>}|null */
-    private ?array $freqCache = null;
+    private ?array $freqCache = null; // ['key' => ..., 'stats' => corpusStats]
 
     private SynonymProvider $synonyms;
     private array $opt;
@@ -184,7 +186,10 @@ class AnchorEngine
             }
         };
         $buildStemSet();
-        $partFreq = (int)$this->opt['max_part_targets'] > 0 ? $this->partFrequency($targets) : [];
+        $stats = $this->corpusStats($targets);
+        $partFreq = (int)$this->opt['max_part_targets'] > 0 ? $stats['part'] : [];
+        $dfLimit = max(3, (int)ceil((float)$this->opt['max_word_df'] * max(1, count($targets))));
+        $minOverlap = (float)$this->opt['min_target_overlap'];
 
         $matches = [];
         $usedAnchors = [];
@@ -214,7 +219,28 @@ class AnchorEngine
             if (isset($existing[$href])) {
                 continue;
             }
+            // тематическая связь: значимые слова названия цели должны встречаться в статье
+            $topical = true;
+            if ($minOverlap > 0) {
+                $sig = $this->significantStems((string)($target['name'] ?? ''));
+                if ($sig) {
+                    $hits = count(array_filter($sig, fn($st) => isset($stemSet[$st])));
+                    $topical = $hits >= min(2, count($sig)) && $hits / count($sig) >= $minOverlap;
+                }
+            }
             foreach ($this->cachedPhrases($target) as $ph) {
+                if ($ph['source'] === 'часть названия') {
+                    if (!$topical) {
+                        continue;
+                    }
+                    if ((float)$this->opt['max_word_df'] > 0) {
+                        // в анкоре минимум два значимых слова, и все они не «общие» для сайта
+                        $ss = $this->significantStems($ph['phrase']);
+                        if (count($ss) < 2 || array_filter($ss, fn($st) => ($stats['df'][$st] ?? 0) > $dfLimit)) {
+                            continue;
+                        }
+                    }
+                }
                 if ($ph['source'] === 'часть названия' && $partFreq && ($partFreq[implode(' ', $ph['stems'])] ?? 0) > (int)$this->opt['max_part_targets']) {
                     continue; // фраза есть в названиях многих целей — неоднозначна
                 }
@@ -344,15 +370,37 @@ class AnchorEngine
         return $this->phraseCache[$k] ??= $this->phrasesForTarget($target);
     }
 
-    /** Сколько целей содержат каждую фразу-часть названия (по основам слов). */
-    private function partFrequency(array $targets): array
+    /** Основы значимых слов названия (без служебных и коротких). */
+    private function significantStems(string $name): array
+    {
+        $stop = array_merge($this->opt['stop_words'], self::COMMON_WORDS);
+        $minLen = max(3, (int)$this->opt['min_word_len']);
+        $stems = [];
+        foreach (TextProcessor::words($name) as $w) {
+            if (mb_strlen($w['word']) >= $minLen && !in_array(mb_strtolower($w['word']), $stop, true)) {
+                $stems[$w['stem']] = true;
+            }
+        }
+        return array_keys($stems);
+    }
+
+    /**
+     * Статистика по названиям целей: part — в скольких целях встречается каждая фраза-часть названия,
+     * df — в скольких названиях встречается основа слова.
+     * @return array{part:array<string,int>,df:array<string,int>}
+     */
+    private function corpusStats(array $targets): array
     {
         $key = count($targets) . ':' . ($targets[0]['id'] ?? 0) . ':' . (end($targets)['id'] ?? 0);
         if ($this->freqCache && $this->freqCache['key'] === $key) {
-            return $this->freqCache['freq'];
+            return $this->freqCache['stats'];
         }
         $freq = [];
+        $df = [];
         foreach ($targets as $t) {
+            foreach ($this->significantStems((string)($t['name'] ?? '')) as $st) {
+                $df[$st] = ($df[$st] ?? 0) + 1;
+            }
             foreach ($this->cachedPhrases($t) as $ph) {
                 if ($ph['source'] === 'часть названия') {
                     $k = implode(' ', $ph['stems']);
@@ -360,8 +408,9 @@ class AnchorEngine
                 }
             }
         }
-        $this->freqCache = ['key' => $key, 'freq' => $freq];
-        return $freq;
+        $stats = ['part' => $freq, 'df' => $df];
+        $this->freqCache = ['key' => $key, 'stats' => $stats];
+        return $stats;
     }
 
     private function findPhrase(array $textNodes, array $stems, array $usedBlocks, array &$wordCache): ?array

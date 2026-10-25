@@ -17,6 +17,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['save_anchor_settings'
         'use_keywords'          => !empty($_POST['use_keywords']),
         'use_synonyms'          => !empty($_POST['use_synonyms']),
         'max_part_words'        => max(1, min(5, (int)($_POST['max_part_words'] ?? 3))),
+        'min_target_overlap'    => max(0, min(1, (float)str_replace(',', '.', (string)($_POST['min_target_overlap'] ?? 0.5)))),
+        'max_word_df'           => max(0, min(1, (float)str_replace(',', '.', (string)($_POST['max_word_df'] ?? 0.02)))),
         'min_part_words'        => max(1, min(5, (int)($_POST['min_part_words'] ?? 2))),
         'max_part_targets'      => max(0, (int)($_POST['max_part_targets'] ?? 3)),
         'min_word_len'          => max(1, min(10, (int)($_POST['min_word_len'] ?? 4))),
@@ -59,6 +61,10 @@ $chk = fn($k) => !empty($anchorSettings[$k]) ? 'checked' : '';
             <span class="hint">2 — однословные части («работа», «новая») не используются как анкоры</span></div>
         <div class="bx-settings-row"><label>Макс. целей с одинаковой частью названия</label><input type="number" name="max_part_targets" min="0" value="<?= (int)($anchorSettings['max_part_targets'] ?? 3) ?>">
             <span class="hint">если фраза есть в названиях более чем стольких страниц, она неоднозначна и пропускается; 0 — не проверять</span></div>
+        <div class="bx-settings-row"><label>Тематическая связь статьи и цели</label><input type="text" name="min_target_overlap" value="<?= $h($anchorSettings['min_target_overlap'] ?? 0.5) ?>" size="5">
+            <span class="hint">0…1: какая доля значимых слов названия цели должна быть в тексте статьи, чтобы брать части названия (не менее 2 слов); 0 — не проверять</span></div>
+        <div class="bx-settings-row"><label>Доля названий для «общего» слова</label><input type="text" name="max_word_df" value="<?= $h($anchorSettings['max_word_df'] ?? 0.02) ?>" size="5">
+            <span class="hint">0…1: в анкоре из части названия минимум два значимых слова, и каждое из них должно быть не более чем в такой доле названий целей; 0.02 — слова из 2% названий и чаще считаются общими; 0 — не проверять</span></div>
         <div class="bx-settings-row"><label>Мин. длина одного слова</label><input type="number" name="min_word_len" min="1" max="10" value="<?= (int)$anchorSettings['min_word_len'] ?>">
             <span class="hint">однословные фразы короче пропускаются</span></div>
         <div class="bx-settings-row"><label>Стоп-слова</label><input type="text" name="stop_words" value="<?= $h(implode(', ', $anchorSettings['stop_words'])) ?>">
