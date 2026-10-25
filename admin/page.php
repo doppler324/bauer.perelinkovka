@@ -30,6 +30,12 @@ $APPLICATION->SetTitle('Перелинковка: ' . $title);
 $APPLICATION->SetAdditionalCSS('/bitrix/css/bauer.perelinkovka/admin.css');
 $APPLICATION->AddHeadScript('/bitrix/js/bauer.perelinkovka/tablekit.js');
 
+// список статей на CAdminList строится до prolog_admin_after (CheckListMode)
+if ($tab === 'anchors') {
+    require_once __DIR__ . '/articles_list.php';
+    bp_articles_list_prepare();
+}
+
 require $_SERVER['DOCUMENT_ROOT'] . '/bitrix/modules/main/include/prolog_admin_after.php';
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && !check_bitrix_sessid()) {

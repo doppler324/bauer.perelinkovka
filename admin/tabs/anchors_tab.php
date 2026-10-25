@@ -149,13 +149,12 @@ $arrow = fn(string $col) => $sortBy === $col ? ($sortDir === 'asc' ? ' ▲' : ' 
 $pageNums = array_values(array_unique(array_filter(array_merge([1, $pages], range(max(1, $page - 2), min($pages, $page + 2))))));
 sort($pageNums);
 ?>
-<?php if (Env::isBitrix()): // родной вид списка Битрикса (классы adm-*), на них не действуют стили модуля ?>
+<?php if (Env::isBitrix()): // стандартный CAdminList (строится в admin/articles_list.php) ?>
 <div class="bp-native">
-<form method="GET" id="artFilter" class="adm-filter-wrap" style="margin-bottom:12px;">
+<form method="GET" id="artFilter" style="margin-bottom:12px;">
+    <input type="hidden" name="lang" value="<?= $h(LANGUAGE_ID) ?>">
     <input type="hidden" name="tab" value="anchors">
     <input type="hidden" name="article" value="<?= (int)$articleId ?>">
-    <input type="hidden" name="sort" value="<?= $h($sortBy) ?>"><input type="hidden" name="dir" value="<?= $h($sortDir) ?>">
-    <input type="hidden" name="per_page" value="<?= (int)$perPage ?>">
     <table class="adm-filter-content-table" style="margin:8px 0;">
         <tr>
             <td style="padding:4px 12px 4px 0;">Инфоблок:</td>
@@ -175,48 +174,8 @@ sort($pageNums);
         </tr>
     </table>
 </form>
-
-<div class="adm-list-table-wrap" id="artList" style="margin-bottom:16px;">
-    <table class="adm-list-table">
-        <thead><tr class="adm-list-table-header">
-            <td class="adm-list-table-cell" style="width:80px;"><div class="adm-list-table-cell-inner"><a href="<?= $h($sortLink('id')) ?>">ID<?= $arrow('id') ?></a></div></td>
-            <td class="adm-list-table-cell"><div class="adm-list-table-cell-inner"><a href="<?= $h($sortLink('name')) ?>">Название<?= $arrow('name') ?></a></div></td>
-            <td class="adm-list-table-cell"><div class="adm-list-table-cell-inner">Раздел</div></td>
-            <td class="adm-list-table-cell" style="width:110px;"><div class="adm-list-table-cell-inner">Ссылки</div></td>
-        </tr></thead>
-        <tbody>
-        <?php if (!$pageItems): ?>
-            <tr class="adm-list-table-row"><td class="adm-list-table-cell" colspan="4" style="text-align:center;padding:20px;">Ничего не найдено</td></tr>
-        <?php endif; ?>
-        <?php foreach ($pageItems as $a): $cur = (int)$a['id'] === $articleId; ?>
-            <tr class="adm-list-table-row<?= $cur ? ' adm-list-row-active' : '' ?>"<?= $cur ? ' style="background:#eaf3fc;"' : '' ?>>
-                <td class="adm-list-table-cell"><?= (int)$a['id'] ?></td>
-                <td class="adm-list-table-cell"><a href="<?= $h($url(['article' => (int)$a['id']])) ?>"<?= $cur ? ' style="font-weight:bold;"' : '' ?>><?= $h($a['name']) ?></a></td>
-                <td class="adm-list-table-cell"><?= $h($secOptions[(int)($a['section_id'] ?? 0)] ?? 'Без раздела') ?></td>
-                <td class="adm-list-table-cell"><?= $anchorStore->get((int)$a['id']) ? '✓ есть' : '' ?></td>
-            </tr>
-        <?php endforeach; ?>
-        </tbody>
-    </table>
-    <div class="adm-navigation">
-        <div class="adm-nav-pages-block">
-            <?php if ($page > 1): ?><a class="adm-nav-page adm-nav-page-prev" href="<?= $h($url(['page' => $page - 1])) ?>"></a><?php endif; ?>
-            <?php $prevN = 0; foreach ($pageNums as $n): ?>
-                <?php if ($prevN && $n - $prevN > 1): ?><span class="adm-nav-page-separator">…</span><?php endif; ?>
-                <?php if ($n === $page): ?><span class="adm-nav-page adm-nav-page-active"><?= $n ?></span>
-                <?php else: ?><a class="adm-nav-page" href="<?= $h($url(['page' => $n])) ?>"><?= $n ?></a><?php endif; ?>
-                <?php $prevN = $n; endforeach; ?>
-            <?php if ($page < $pages): ?><a class="adm-nav-page adm-nav-page-next" href="<?= $h($url(['page' => $page + 1])) ?>"></a><?php endif; ?>
-        </div>
-        <div class="adm-nav-pages-total-block">Всего: <?= $total ?> · выбрана #<?= (int)$articleId ?></div>
-        <div class="adm-nav-pages-number-block">
-            <span class="adm-nav-pages-number"><span class="adm-nav-pages-number-text">Записей на странице:</span>
-            <span class="adm-select-wrap"><select class="adm-select" onchange="location.href=this.value">
-                <?php foreach ($perPageOptions as $n): ?><option value="<?= $h($url(['per_page' => $n, 'page' => 1])) ?>" <?= $n === $perPage ? 'selected' : '' ?>><?= $n ?></option><?php endforeach; ?>
-            </select></span></span>
-        </div>
-    </div>
-</div>
+<?php require_once dirname(__DIR__) . '/articles_list.php'; bp_articles_list_display(); ?>
+<div style="margin:10px 0;">Выбрана: <b>#<?= (int)$articleId ?> <?= $h($article['name'] ?? '') ?></b></div>
 </div>
 <?php else: ?>
 <form method="GET" class="bx-filter" id="artFilter">
