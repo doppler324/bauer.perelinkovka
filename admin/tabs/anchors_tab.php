@@ -72,6 +72,27 @@ if ($article) {
     $matches = $anchorEngine->process($currentText, $targets)['matches'];
 }
 
+// уже установленные в текст ссылки (<a data-bp>)
+$installed = [];
+if ($article && strpos($currentText, 'data-bp') !== false) {
+    $doc = new DOMDocument();
+    $prevErr = libxml_use_internal_errors(true);
+    $doc->loadHTML('<?xml encoding="utf-8"?><div>' . $currentText . '</div>', LIBXML_HTML_NOIMPLIED | LIBXML_HTML_NODEFDTD);
+    libxml_clear_errors();
+    libxml_use_internal_errors($prevErr);
+    $targetNames = [];
+    foreach ($targets ?? [] as $t) {
+        $targetNames[(int)$t['id']] ??= ['type' => $t['type'] ?? 'element', 'name' => $t['name'] ?? ''];
+    }
+    foreach ($doc->getElementsByTagName('a') as $a) {
+        if ($a->hasAttribute('data-bp')) {
+            $tid = (int)$a->getAttribute('data-bp');
+            $installed[] = ['id' => $tid, 'anchor' => $a->textContent, 'type' => $targetNames[$tid]['type'] ?? 'element',
+                'name' => $targetNames[$tid]['name'] ?? ''];
+        }
+    }
+}
+
 $h = fn($s) => htmlspecialchars((string)$s, ENT_QUOTES, 'UTF-8');
 ?>
 <h1 class="bx-page-title">Анкоры и синонимы в тексте <a href="?tab=anchor_settings" class="bx-btn bx-btn-sm" style="vertical-align:middle;">⚙️ Настройки</a></h1>
@@ -260,7 +281,7 @@ sort($pageNums);
     <input type="hidden" name="article_iblock" value="<?= $articleIblockId ?>">
     <div class="bx-table-wrap" style="margin-bottom:16px;">
         <div class="bx-table-toolbar">
-            <div class="left"><b>Найденные места для ссылок: <?= count($matches) ?></b></div>
+            <div class="left"><b>Найденные места для ссылок: <?= count($matches) ?></b><?= $installed ? ' · <span style="color:#16a34a;">установлено: ' . count($installed) . '</span>' : '' ?></div>
             <div class="right">
                 <?php if ($stored): ?>
                     <button type="submit" name="anchor_action" value="reset" class="bx-btn bx-btn-sm bx-btn-danger" onclick="return confirm('Вернуть исходный текст?')">↩ Сбросить</button>
@@ -271,7 +292,19 @@ sort($pageNums);
         <table class="bx-table">
             <thead><tr><th style="width:30px;"><input type="checkbox" class="select-all" id="anchorsAll" title="Выбрать все" <?= $afterApply ? '' : 'checked' ?>></th><th>Цель</th><th>Анкор</th><th>Источник фразы</th><th>Контекст</th></tr></thead>
             <tbody>
-            <?php if (!$matches): ?>
+            <?php foreach ($installed as $in): ?>
+                <tr style="background:#f0fdf4;">
+                    <td><input type="checkbox" checked disabled title="Уже установлена"></td>
+                    <td>
+                        <span class="entity-type type-<?= $in['type'] === 'element' ? 'elem' : 'sect' ?>"><?= $in['type'] === 'element' ? 'ЭЛ' : 'РЗ' ?></span>
+                        #<?= (int)$in['id'] ?>: <?= $h($in['name']) ?>
+                    </td>
+                    <td><b><?= $h($in['anchor']) ?></b></td>
+                    <td><span class="badge badge-related" style="background:#16a34a;color:#fff;">✓ установлена</span></td>
+                    <td style="color:#666;">ссылка уже есть в тексте статьи</td>
+                </tr>
+            <?php endforeach; ?>
+            <?php if (!$matches && !$installed): ?>
                 <tr><td colspan="5" style="text-align:center;padding:30px;color:#999;">Подходящих мест не найдено</td></tr>
             <?php endif; ?>
             <?php foreach ($matches as $m): ?>
