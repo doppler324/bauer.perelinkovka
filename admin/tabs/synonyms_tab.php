@@ -13,6 +13,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['save_synonyms'])) {
     $synonyms->saveFromText((string)($_POST['synonyms_text'] ?? ''));
     $synSaved = true;
 }
+$manualSaved = null;
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['save_manual_anchors'])) {
+    $manualSaved = Env::saveManualAnchorsFromText((string)($_POST['manual_anchors_text'] ?? ''));
+}
 ?>
 <h1 class="bx-page-title">Синонимы для анкоров</h1>
 
@@ -29,4 +33,18 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['save_synonyms'])) {
     </div>
     <button type="submit" class="bx-btn bx-btn-primary">Сохранить</button>
     <a href="?tab=anchor_settings" class="bx-btn">К настройкам анкоров</a>
+</form>
+
+<?php if ($manualSaved !== null): ?>
+    <div class="bx-notification bx-notification-success">✅ Ручные анкоры сохранены: целей — <?= (int)$manualSaved ?></div>
+<?php endif; ?>
+
+<form method="POST" action="?tab=synonyms">
+    <input type="hidden" name="save_manual_anchors" value="1">
+    <div class="bx-settings-section">
+        <h3>Ручные анкоры целей</h3>
+        <p class="hint" style="margin:0 0 10px;">Одна цель на строку: <code>тип:ID = фраза 1, фраза 2</code>, где тип — <code>element</code> или <code>section</code>. Ручные фразы ищутся в тексте раньше остальных.<br>Пример: <code>element:5 = купить iPhone 15, айфон 15</code></p>
+        <textarea name="manual_anchors_text" rows="8" style="width:100%;font-family:inherit;"><?= $h(Env::manualAnchorsText()) ?></textarea>
+    </div>
+    <button type="submit" class="bx-btn bx-btn-primary">Сохранить ручные анкоры</button>
 </form>

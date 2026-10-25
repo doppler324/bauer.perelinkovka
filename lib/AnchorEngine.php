@@ -24,6 +24,7 @@ class AnchorEngine
         'min_word_len'      => 4,
         'max_links_per_article' => 0, // 0 — без ограничения
         'one_link_per_block' => true,
+        'manual_anchors'    => [],    // ручные анкоры: ["тип:id" => ["фраза", ...]]
         'unique_anchors'    => false, // один и тот же текст анкора не повторяется в статье
         'skip_first_block'  => false, // не ставить ссылку в первом абзаце
         'words_per_link'    => 0,     // не чаще одной ссылки на N слов текста (0 — без ограничения)
@@ -77,6 +78,11 @@ class AnchorEngine
             }
         };
 
+        $manualKey = ($target['type'] ?? 'element') . ':' . (int)$target['id'];
+        foreach ((array)($this->opt['manual_anchors'][$manualKey] ?? []) as $phrase) {
+            $add((string)$phrase, 'ручной');
+        }
+
         $name = (string)($target['name'] ?? '');
         if ($this->opt['use_name']) {
             $add($name, 'название');
@@ -107,7 +113,8 @@ class AnchorEngine
         }
 
         $phrases = array_values($found);
-        usort($phrases, fn($a, $b) => count($b['stems']) <=> count($a['stems']));
+        // ручные анкоры идут первыми, остальные — длинные вперёд
+        usort($phrases, fn($a, $b) => [$a['source'] !== 'ручной', count($b['stems'])] <=> [$b['source'] !== 'ручной', count($a['stems'])]);
         return $phrases;
     }
 

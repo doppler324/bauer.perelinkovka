@@ -70,7 +70,43 @@ class Env
     public static function anchorOptions(): array
     {
         $saved = self::$store->read('anchor_settings');
-        return array_replace(AnchorEngine::DEFAULTS, is_array($saved) ? $saved : []);
+        return array_replace(AnchorEngine::DEFAULTS, is_array($saved) ? $saved : [], ['manual_anchors' => self::manualAnchors()]);
+    }
+
+    /** Ручные анкоры целей: ["тип:id" => ["фраза", ...]]. */
+    public static function manualAnchors(): array
+    {
+        $saved = self::$store->read('manual_anchors');
+        return is_array($saved) ? $saved : [];
+    }
+
+    /**
+     * Сохраняет ручные анкоры из текста: строка "element:5 = фраза 1, фраза 2" (тип element или section).
+     * @return int число целей с анкорами
+     */
+    public static function saveManualAnchorsFromText(string $text): int
+    {
+        $map = [];
+        foreach (preg_split('/\R/u', $text) as $line) {
+            if (!preg_match('/^\s*(element|section)\s*:\s*(\d+)\s*=\s*(.+)$/u', $line, $m)) {
+                continue;
+            }
+            $phrases = array_values(array_unique(array_filter(array_map('trim', explode(',', $m[3])), 'strlen')));
+            if ($phrases) {
+                $map[$m[1] . ':' . (int)$m[2]] = $phrases;
+            }
+        }
+        self::$store->write('manual_anchors', $map);
+        return count($map);
+    }
+
+    public static function manualAnchorsText(): string
+    {
+        $lines = [];
+        foreach (self::manualAnchors() as $key => $phrases) {
+            $lines[] = $key . ' = ' . implode(', ', $phrases);
+        }
+        return implode("\n", $lines);
     }
 
     public static function saveAnchorOptions(array $options): bool
