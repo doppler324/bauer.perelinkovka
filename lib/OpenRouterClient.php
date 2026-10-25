@@ -100,11 +100,20 @@ class OpenRouterClient implements AiClientInterface
             throw new \RuntimeException('OpenRouter API request failed: ' . $error);
         }
 
-        $result = json_decode($response, true);
+        $result = json_decode((string)$response, true);
 
         if ($httpCode !== 200) {
-            $errorMsg = $result['error']['message'] ?? 'HTTP ' . $httpCode;
-            throw new \RuntimeException('OpenRouter API error: ' . $errorMsg);
+            $errorMsg = $result['error']['message'] ?? '';
+            // детали провайдера (например, причина блокировки) лежат в error.metadata
+            $meta = $result['error']['metadata'] ?? null;
+            if ($meta) {
+                $errorMsg .= ' [' . mb_substr(json_encode($meta, JSON_UNESCAPED_UNICODE), 0, 300) . ']';
+            }
+            if ($errorMsg === '') {
+                $errorMsg = mb_substr(trim(strip_tags((string)$response)), 0, 300);
+            }
+            $model = $data['model'] ?? '';
+            throw new \RuntimeException('OpenRouter API error: HTTP ' . $httpCode . ($errorMsg !== '' ? ' — ' . $errorMsg : '') . ($model !== '' ? ' (модель ' . $model . ')' : ''));
         }
 
         return $result;
