@@ -24,6 +24,7 @@ class AnchorEngine
         'min_word_len'      => 4,
         'max_links_per_article' => 0, // 0 — без ограничения
         'one_link_per_block' => true,
+        'unique_anchors'    => false, // один и тот же текст анкора не повторяется в статье
         'skip_first_block'  => false, // не ставить ссылку в первом абзаце
         'words_per_link'    => 0,     // не чаще одной ссылки на N слов текста (0 — без ограничения)
         'target_elements'   => true,
@@ -146,6 +147,7 @@ class AnchorEngine
         $this->collect($root, null, $textNodes);
 
         $matches = [];
+        $usedAnchors = [];
         $limit = (int)$this->opt['max_links_per_article'];
         $perWords = (int)$this->opt['words_per_link'];
         if ($perWords > 0) {
@@ -178,6 +180,11 @@ class AnchorEngine
                     continue;
                 }
                 [$ni, $start, $end, $block] = $hit;
+                $anchorKey = mb_strtolower(substr($textNodes[$ni]['node']->nodeValue, $start, $end - $start));
+                if ($this->opt['unique_anchors'] && isset($usedAnchors[$anchorKey])) {
+                    continue;
+                }
+                $usedAnchors[$anchorKey] = true;
                 if ($this->opt['one_link_per_block']) {
                     $usedBlocks[$block] = true;
                 }
