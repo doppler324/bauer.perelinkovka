@@ -53,9 +53,8 @@ function bp_articles_list_prepare(): ?CAdminList
         return implode(' › ', $parts);
     };
 
-    $store = Env::anchorStore();
     $rows = [];
-    foreach ($dp->getElements(['iblock_id' => $iblockId, 'has_text' => true]) as $e) {
+    foreach ($dp->getArticleList($iblockId) as $e) {
         $sid = (int)($e['section_id'] ?? 0);
         if ($section !== null && $sid !== $section) {
             continue;
@@ -64,7 +63,7 @@ function bp_articles_list_prepare(): ?CAdminList
             continue;
         }
         $rows[] = ['ID' => (int)$e['id'], 'NAME' => (string)$e['name'],
-            'SECTION' => $sid ? $secPath($sid) : 'Без раздела', 'DONE' => $store->get((int)$e['id']) ? 1 : 0];
+            'SECTION' => $sid ? $secPath($sid) : 'Без раздела'];
     }
 
     $oSort = new CAdminSorting(BP_ARTICLES_TABLE, 'ID', 'asc');
@@ -90,7 +89,9 @@ function bp_articles_list_prepare(): ?CAdminList
     $rs->NavStart(CAdminResult::GetNavSize(BP_ARTICLES_TABLE, 10));
     $lAdmin->NavText($rs->GetNavPrint('Статьи'));
 
+    $store = Env::anchorStore();
     while ($r = $rs->NavNext(true, 'f_')) {
+        $r['DONE'] = $store->get((int)$r['ID']) ? 1 : 0;
         $row = $lAdmin->AddRow($r['ID'], $r);
         $name = htmlspecialchars($r['NAME'], ENT_QUOTES, 'UTF-8');
         $href = htmlspecialchars(bp_articles_url($iblockId, (int)$r['ID'], $section, $search), ENT_QUOTES, 'UTF-8');

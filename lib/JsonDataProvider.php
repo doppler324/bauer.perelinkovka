@@ -163,6 +163,14 @@ class JsonDataProvider implements DataProviderInterface
     /**
      * @inheritDoc
      */
+    public function getArticleList(int $iblockId): array
+    {
+        return array_map(function ($e) {
+            unset($e['text'], $e['description']);
+            return $e;
+        }, $this->getElements(['iblock_id' => $iblockId, 'has_text' => true]));
+    }
+
     public function countElements(array $filter = []): int
     {
         return count($this->getElements($filter));

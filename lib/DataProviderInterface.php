@@ -53,6 +53,12 @@ interface DataProviderInterface
     public function countElements(array $filter = []): int;
 
     /**
+     * Лёгкий список статей инфоблока (элементы с текстом) для выбора в админке: только id, iblock_id, section_id, name, без текстов.
+     * @return array[]
+     */
+    public function getArticleList(int $iblockId): array;
+
+    /**
      * Получить элемент по ID
      * @param int $id
      * @return array|null

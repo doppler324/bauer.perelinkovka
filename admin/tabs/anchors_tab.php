@@ -21,12 +21,11 @@ $articleIblockId = (int)($_REQUEST['article_iblock'] ?? 0);
 if (!in_array($articleIblockId, $articleIblockIds, true)) {
     $articleIblockId = $articleIblockIds[0] ?? 0;
 }
-$articles = $articleIblockId
-    ? array_map(function ($e) { unset($e['text']); return $e; }, $dataProvider->getElements(['iblock_id' => $articleIblockId, 'has_text' => true]))
-    : [];
+// список — без текстов; статья не выбирается сама: ссылки считаются только для выбранной в списке
+$articles = $articleIblockId ? $dataProvider->getArticleList($articleIblockId) : [];
 $articleId = (int)($_REQUEST['article'] ?? 0);
 if (!in_array($articleId, array_map(fn($e) => (int)$e['id'], $articles), true)) {
-    $articleId = (int)($articles[0]['id'] ?? 0);
+    $articleId = 0;
 }
 $article = $articleId ? $dataProvider->getElement($articleId) : null;
 
@@ -175,7 +174,7 @@ sort($pageNums);
     </table>
 </form>
 <?php require_once dirname(__DIR__) . '/articles_list.php'; bp_articles_list_display(); ?>
-<div style="margin:10px 0;">Выбрана: <b>#<?= (int)$articleId ?> <?= $h($article['name'] ?? '') ?></b></div>
+<?php if ($article): ?><div style="margin:10px 0;">Выбрана: <b>#<?= (int)$articleId ?> <?= $h($article['name'] ?? '') ?></b></div><?php endif; ?>
 </div>
 <?php else: ?>
 <form method="GET" class="bx-filter" id="artFilter">
@@ -251,6 +250,9 @@ sort($pageNums);
 <?php endif; ?>
 
 <div id="artMain">
+<?php if (!$article): ?>
+<div class="bx-notification bx-notification-warning">Выберите статью в списке выше: ссылки для неё будут подобраны после выбора.</div>
+<?php else: ?>
 <form method="POST" action="<?= $h($url()) ?>">
     <input type="hidden" name="article" value="<?= $articleId ?>">
     <input type="hidden" name="article_iblock" value="<?= $articleIblockId ?>">
@@ -291,6 +293,7 @@ sort($pageNums);
     <h3>Текст статьи<?= $stored ? ' (со вставленными ссылками, обновлён ' . $h($stored['updated']) . ')' : '' ?></h3>
     <div style="line-height:1.6;"><?= $currentText ?></div>
 </div>
+<?php endif; ?>
 </div>
 <script>
 (function () {
