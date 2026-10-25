@@ -23,10 +23,21 @@ register_shutdown_function(function () {
         echo json_encode(['ok' => false, 'error' => 'Фатальная ошибка PHP: ' . $err['message'] . ' (' . basename($err['file']) . ':' . $err['line'] . ')'], JSON_UNESCAPED_UNICODE);
         return;
     }
-    $body = ob_get_clean();
+    $body = (string)ob_get_clean();
     header('Content-Type: application/json; charset=utf-8');
-    $pos = strpos((string)$body, '{"');
-    echo $pos === false ? json_encode(['ok' => false, 'error' => 'Пустой ответ сервера: ' . mb_substr(strip_tags($body), 0, 300)], JSON_UNESCAPED_UNICODE) : substr($body, $pos);
+    $pos = strpos($body, '{"');
+    $json = null;
+    if ($pos !== false) {
+        // вокруг JSON может быть посторонний вывод (предупреждения, хвост Битрикса): берём самый длинный корректный фрагмент
+        for ($end = strlen($body), $tries = 0; $tries < 40 && ($end = strrpos(substr($body, 0, $end), '}')) !== false; $tries++) {
+            $cand = substr($body, $pos, $end - $pos + 1);
+            if (json_decode($cand, true) !== null) {
+                $json = $cand;
+                break;
+            }
+        }
+    }
+    echo $json ?? json_encode(['ok' => false, 'error' => 'Ответ сервера не разобран. Начало: ' . mb_substr(strip_tags($body), 0, 150) . ' … Конец: ' . mb_substr(strip_tags($body), -200)], JSON_UNESCAPED_UNICODE | JSON_INVALID_UTF8_SUBSTITUTE);
 });
 
 $dp = \Bauer\Perelinkovka\Env::provider();

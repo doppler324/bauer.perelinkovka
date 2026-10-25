@@ -76,7 +76,8 @@
         return fetch(window.BP_API || 'progress_api.php', {method: 'POST', body: body, credentials: 'same-origin'}).then(function (r) {
             return r.text().then(function (t) {
                 try { return JSON.parse(t); } catch (e) {
-                    throw new Error('Сервер вернул не JSON (HTTP ' + r.status + '): ' + t.replace(/<[^>]*>/g, ' ').replace(/\s+/g, ' ').trim().slice(0, 300));
+                    var plain = t.replace(/<[^>]*>/g, ' ').replace(/\s+/g, ' ').trim();
+                    throw new Error('Сервер вернул не JSON (HTTP ' + r.status + ', ' + t.length + ' байт): ' + plain.slice(0, 150) + (plain.length > 300 ? ' … ' + plain.slice(-150) : ''));
                 }
             });
         }).then(function (j) { if (!j.ok) { throw new Error(j.error || 'ошибка'); } return j; });
