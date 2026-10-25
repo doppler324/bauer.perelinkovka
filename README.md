@@ -11,7 +11,9 @@
 PHP 8.0+, UTF-8 (`BX_UTF`), модуль `iblock`, расширения `dom` и `mbstring`.
 
 ## Установка
-1. Скопируйте папку `bauer.perelinkovka` в `/local/modules/` (или `/bitrix/modules/`).
+1. Склонируйте репозиторий прямо в папку модулей (корень репозитория и есть модуль):
+   `cd local/modules && git clone https://github.com/doppler324/bauer.perelinkovka.git bauer.perelinkovka`
+   (или в `/bitrix/modules/`). Обновление: `cd local/modules/bauer.perelinkovka && git pull`.
 2. Админка → Настройки → Настройки продукта → Модули → «Перелинковка» → Установить.
 3. Сервисы → Перелинковка: создайте блок, нажмите подбор связей; на странице разместите компонент:
 
@@ -33,5 +35,6 @@ $APPLICATION->IncludeComponent('bauer:perelinkovka.links', '', [
 
 ## Разработка и тесты без Битрикса
 `php -S localhost:8000 -t tests`, затем `admin_preview.php` (предпросмотр) или `module_shell.php` (боевая оболочка на JSON-данных).
-Стили: `python3 ../build/scope_css.py` собирает `install/css/admin.css` (стили ограничены областью `#bp-app`).
-Правки админки вносятся в `admin/tabs/*` — они общие для тестового и боевого режима.
+Стили: `python3 dev/build/scope_css.py` собирает `install/css/admin.css` (стили ограничены областью `#bp-app`).
+После правок в `install/css`, `install/js`, `install/components` переустановите модуль (удалить → установить), чтобы файлы скопировались в `/bitrix/`.
+Планы и архитектура — в `dev/plans`. Правки админки вносятся в `admin/tabs/*` — они общие для тестового и боевого режима.
