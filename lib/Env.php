@@ -170,7 +170,10 @@ class Env
             return null;
         }
         $model = trim((string)($o['embedding_model'] ?? '')) ?: 'openai/text-embedding-3-small';
-        $client = new OpenRouterClient(['api_key' => $key, 'embedding_model' => $model, 'timeout' => 60]);
+        $proxy = self::$mode === 'bitrix'
+            ? trim((string)\Bitrix\Main\Config\Option::get('bauer.perelinkovka', 'openrouter_proxy', ''))
+            : (defined('OPENROUTER_PROXY') ? (string)OPENROUTER_PROXY : '');
+        $client = new OpenRouterClient(['api_key' => $key, 'embedding_model' => $model, 'timeout' => 60, 'proxy' => $proxy]);
         $store = new VectorStore(self::$mode === 'bitrix' ? null : self::$dataDir . '/vectors.json');
         return new Embeddings($client, $store, $model);
     }

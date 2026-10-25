@@ -17,6 +17,7 @@ class OpenRouterClient implements AiClientInterface
     private string $defaultEmbeddingModel = 'openai/text-embedding-3-small';
     private string $defaultChatModel = 'deepseek/deepseek-chat';
     private int $timeout = 5;
+    private string $proxy = '';
 
     public function __construct(array $config = [])
     {
@@ -26,6 +27,7 @@ class OpenRouterClient implements AiClientInterface
         $this->defaultEmbeddingModel = $config['embedding_model'] ?? $this->defaultEmbeddingModel;
         $this->defaultChatModel = $config['chat_model'] ?? $this->defaultChatModel;
         $this->timeout = $config['timeout'] ?? $this->timeout;
+        $this->proxy = trim((string)($config['proxy'] ?? ''));
     }
 
     public function isAvailable(): bool
@@ -54,13 +56,19 @@ class OpenRouterClient implements AiClientInterface
             CURLOPT_TIMEOUT        => 5,
             CURLOPT_CONNECTTIMEOUT => 5,
             CURLOPT_SSL_VERIFYPEER => true,
-        ]);
+        ] + $this->proxyOptions());
 
         curl_exec($ch);
         $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
         curl_close($ch);
 
         return $httpCode === 200;
+    }
+
+    /** Настройки curl для запросов через прокси (http://host:port, socks5://user:pass@host:port); пусто — напрямую. */
+    private function proxyOptions(): array
+    {
+        return $this->proxy === '' ? [] : [CURLOPT_PROXY => $this->proxy];
     }
 
     /**
@@ -89,7 +97,7 @@ class OpenRouterClient implements AiClientInterface
             CURLOPT_TIMEOUT        => $this->timeout,
             CURLOPT_CONNECTTIMEOUT => 10,
             CURLOPT_SSL_VERIFYPEER => true,
-        ]);
+        ] + $this->proxyOptions());
 
         $response = curl_exec($ch);
         $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
