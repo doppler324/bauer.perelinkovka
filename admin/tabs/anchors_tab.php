@@ -30,6 +30,7 @@ if (!in_array($articleId, array_map(fn($e) => (int)$e['id'], $articles), true)) 
 $article = $articleId ? $dataProvider->getElement($articleId) : null;
 
 $anchorMsg = '';
+$afterApply = false;
 $matches = [];
 $originalText = $article['text'] ?? '';
 $currentText = $originalText;
@@ -62,7 +63,8 @@ if ($article) {
             $anchorStore->save($articleId, $res['html'], $links);
             $currentText = $res['html'];
             $stored = $anchorStore->get($articleId);
-            $anchorMsg = 'Вставлено ссылок: ' . count($res['matches']);
+            $anchorMsg = 'Вставлено ссылок: ' . count($res['matches']) . ' (' . implode(', ', array_map(fn($m) => '«' . $m['anchor'] . '» → #' . $m['target_id'], $res['matches'])) . ')';
+            $afterApply = true; // оставшиеся места показываем неотмеченными: вставляются только выбранные
         } else {
             $anchorMsg = 'Ничего не выбрано или подходящих мест нет.';
         }
@@ -267,14 +269,14 @@ sort($pageNums);
             </div>
         </div>
         <table class="bx-table">
-            <thead><tr><th style="width:30px;"><input type="checkbox" class="select-all" id="anchorsAll" title="Выбрать все" checked></th><th>Цель</th><th>Анкор</th><th>Источник фразы</th><th>Контекст</th></tr></thead>
+            <thead><tr><th style="width:30px;"><input type="checkbox" class="select-all" id="anchorsAll" title="Выбрать все" <?= $afterApply ? '' : 'checked' ?>></th><th>Цель</th><th>Анкор</th><th>Источник фразы</th><th>Контекст</th></tr></thead>
             <tbody>
             <?php if (!$matches): ?>
                 <tr><td colspan="5" style="text-align:center;padding:30px;color:#999;">Подходящих мест не найдено</td></tr>
             <?php endif; ?>
             <?php foreach ($matches as $m): ?>
                 <tr>
-                    <td><input type="checkbox" name="targets[]" value="<?= $m['target_type'] ?>:<?= $m['target_id'] ?>" checked></td>
+                    <td><input type="checkbox" name="targets[]" value="<?= $m['target_type'] ?>:<?= $m['target_id'] ?>" <?= $afterApply ? '' : 'checked' ?>></td>
                     <td>
                         <span class="entity-type type-<?= $m['target_type'] === 'element' ? 'elem' : 'sect' ?>"><?= $m['target_type'] === 'element' ? 'ЭЛ' : 'РЗ' ?></span>
                         #<?= $m['target_id'] ?>: <?= $h($m['target_name']) ?>
