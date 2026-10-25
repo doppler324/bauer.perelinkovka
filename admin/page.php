@@ -27,8 +27,16 @@ $tab = bp_tab($_GET['tab'] ?? null);
 [$section, $title] = bp_section_titles($tab);
 
 $APPLICATION->SetTitle('Перелинковка: ' . $title);
-$APPLICATION->SetAdditionalCSS('/bitrix/css/bauer.perelinkovka/admin.css');
-$APPLICATION->AddHeadScript('/bitrix/js/bauer.perelinkovka/tablekit.js');
+// версия по времени файла, чтобы браузер не держал старый admin.css после обновления
+$bpCss = '/bitrix/css/bauer.perelinkovka/admin.css';
+$APPLICATION->SetAdditionalCSS($bpCss . '?v=' . (int)@filemtime($_SERVER['DOCUMENT_ROOT'] . $bpCss));
+$APPLICATION->AddHeadScript('/bitrix/js/bauer.perelinkovka/tablekit.js?v=' . (int)@filemtime($_SERVER['DOCUMENT_ROOT'] . '/bitrix/js/bauer.perelinkovka/tablekit.js'));
+
+// список статей на CAdminList строится до prolog_admin_after (CheckListMode)
+if ($tab === 'anchors') {
+    require_once __DIR__ . '/articles_list.php';
+    bp_articles_list_prepare();
+}
 
 require $_SERVER['DOCUMENT_ROOT'] . '/bitrix/modules/main/include/prolog_admin_after.php';
 
@@ -36,6 +44,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && !check_bitrix_sessid()) {
     CAdminMessage::ShowMessage(['MESSAGE' => 'Сессия устарела, обновите страницу и повторите действие', 'TYPE' => 'ERROR']);
 } else {
     $settingsUrl = '/bitrix/admin/settings.php?mid=bauer.perelinkovka&lang=' . LANGUAGE_ID . '&back_url_settings=' . urlencode('/bitrix/admin/bauer_perelinkovka.php?lang=' . LANGUAGE_ID);
+    ?>
+    <?php
+    // скопированные в /bitrix файлы должны быть свежими: проверяем по метке в progress.js
+    $bpJsFile = $_SERVER['DOCUMENT_ROOT'] . '/bitrix/js/bauer.perelinkovka/progress.js';
+    if (!is_file($bpJsFile) || strpos((string)file_get_contents($bpJsFile), 'bpRunEmbIndex') === false) {
+        CAdminMessage::ShowMessage(['MESSAGE' => 'Файлы модуля в /bitrix устарели', 'DETAILS' => 'Выполните update.sh в папке модуля и обновите страницу (Ctrl+F5): часть кнопок работает со старыми скриптами неверно.', 'TYPE' => 'ERROR', 'HTML' => true]);
+    }
     ?>
     <div id="bp-app">
         <?php bp_render_menus($tab, $settingsUrl); ?>
@@ -47,8 +62,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && !check_bitrix_sessid()) {
         window.BP_API = <?= CUtil::PhpToJSObject(Env::apiUrl()) ?>;
         window.BP_SESSID = <?= CUtil::PhpToJSObject(bitrix_sessid()) ?>;
     </script>
-    <script src="/bitrix/js/bauer.perelinkovka/ajaxnav.js"></script>
-    <script src="/bitrix/js/bauer.perelinkovka/progress.js"></script>
+    <?php
+    // версия по времени файла: браузер не держит старые скрипты после обновления
+    $bpJs = fn(string $f) => '/bitrix/js/bauer.perelinkovka/' . $f . '?v=' . (int)@filemtime($_SERVER['DOCUMENT_ROOT'] . '/bitrix/js/bauer.perelinkovka/' . $f);
+    ?>
+    <script src="<?= $bpJs('ajaxnav.js') ?>"></script>
+    <script src="<?= $bpJs('progress.js') ?>"></script>
     <?php
 }
 

@@ -17,6 +17,7 @@ class OpenRouterClient implements AiClientInterface
     private string $defaultEmbeddingModel = 'openai/text-embedding-3-small';
     private string $defaultChatModel = 'deepseek/deepseek-chat';
     private int $timeout = 5;
+    private string $proxy = '';
 
     public function __construct(array $config = [])
     {
@@ -26,6 +27,7 @@ class OpenRouterClient implements AiClientInterface
         $this->defaultEmbeddingModel = $config['embedding_model'] ?? $this->defaultEmbeddingModel;
         $this->defaultChatModel = $config['chat_model'] ?? $this->defaultChatModel;
         $this->timeout = $config['timeout'] ?? $this->timeout;
+        $this->proxy = self::normalizeProxy((string)($config['proxy'] ?? ''));
     }
 
     public function isAvailable(): bool
@@ -54,13 +56,42 @@ class OpenRouterClient implements AiClientInterface
             CURLOPT_TIMEOUT        => 5,
             CURLOPT_CONNECTTIMEOUT => 5,
             CURLOPT_SSL_VERIFYPEER => true,
-        ]);
+        ] + $this->proxyOptions());
 
         curl_exec($ch);
         $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
         curl_close($ch);
 
         return $httpCode === 200;
+    }
+
+    /**
+     * Адрес прокси в формате curl. Понимает и популярную запись host:port:user:pass (считается HTTP-прокси),
+     * готовые адреса с протоколом (http://, https://, socks5://) оставляет как есть.
+     */
+    public static function normalizeProxy(string $proxy): string
+    {
+        $proxy = trim($proxy);
+        if ($proxy !== '' && !str_contains($proxy, '://') && preg_match('/^([^:\/@\s]+):(\d{1,5}):([^:\s]+):(\S+)$/', $proxy, $m)) {
+            return 'http://' . rawurlencode($m[3]) . ':' . rawurlencode($m[4]) . '@' . $m[1] . ':' . $m[2];
+        }
+        return $proxy;
+    }
+
+    /** Настройки curl для запросов через прокси (http://host:port, socks5://user:pass@host:port); пусто — напрямую. */
+    /** Описание прокси для диагностики: без логина и пароля. */
+    public function proxyLabel(): string
+    {
+        if ($this->proxy === '') {
+            return 'прокси НЕ задан, запрос идёт напрямую';
+        }
+        $p = parse_url($this->proxy);
+        return 'через прокси ' . ($p['scheme'] ?? 'http') . '://' . ($p['host'] ?? '?') . (isset($p['port']) ? ':' . $p['port'] : '');
+    }
+
+    private function proxyOptions(): array
+    {
+        return $this->proxy === '' ? [] : [CURLOPT_PROXY => $this->proxy];
     }
 
     /**
@@ -89,7 +120,7 @@ class OpenRouterClient implements AiClientInterface
             CURLOPT_TIMEOUT        => $this->timeout,
             CURLOPT_CONNECTTIMEOUT => 10,
             CURLOPT_SSL_VERIFYPEER => true,
-        ]);
+        ] + $this->proxyOptions());
 
         $response = curl_exec($ch);
         $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
@@ -100,11 +131,20 @@ class OpenRouterClient implements AiClientInterface
             throw new \RuntimeException('OpenRouter API request failed: ' . $error);
         }
 
-        $result = json_decode($response, true);
+        $result = json_decode((string)$response, true);
 
         if ($httpCode !== 200) {
-            $errorMsg = $result['error']['message'] ?? 'HTTP ' . $httpCode;
-            throw new \RuntimeException('OpenRouter API error: ' . $errorMsg);
+            $errorMsg = $result['error']['message'] ?? '';
+            // детали провайдера (например, причина блокировки) лежат в error.metadata
+            $meta = $result['error']['metadata'] ?? null;
+            if ($meta) {
+                $errorMsg .= ' [' . mb_substr(json_encode($meta, JSON_UNESCAPED_UNICODE), 0, 300) . ']';
+            }
+            if ($errorMsg === '') {
+                $errorMsg = mb_substr(trim(strip_tags((string)$response)), 0, 300);
+            }
+            $model = $data['model'] ?? '';
+            throw new \RuntimeException('OpenRouter API error: HTTP ' . $httpCode . ($errorMsg !== '' ? ' — ' . $errorMsg : '') . ($model !== '' ? ' (модель ' . $model . ')' : '') . '; ' . $this->proxyLabel());
         }
 
         return $result;

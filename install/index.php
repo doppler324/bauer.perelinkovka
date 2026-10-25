@@ -15,7 +15,7 @@ class bauer_perelinkovka extends CModule
     public $PARTNER_URI = '';
 
     private const TABLES = [
-        'b_bauer_perelinkovka_link', 'b_bauer_perelinkovka_block', 'b_bauer_perelinkovka_anchor',
+        'b_bauer_perelinkovka_link', 'b_bauer_perelinkovka_block', 'b_bauer_perelinkovka_anchor', 'b_bauer_perelinkovka_vector',
     ];
 
     public function __construct()
@@ -94,6 +94,7 @@ class bauer_perelinkovka extends CModule
             \Bauer\Perelinkovka\Orm\BlockTable::class,
             \Bauer\Perelinkovka\Orm\LinkTable::class,
             \Bauer\Perelinkovka\Orm\AnchorTable::class,
+            \Bauer\Perelinkovka\Orm\VectorTable::class,
         ] as $table) {
             if (!$conn->isTableExists($table::getTableName())) {
                 $table::getEntity()->createDbTable();
@@ -105,6 +106,7 @@ class bauer_perelinkovka extends CModule
             'CREATE INDEX ix_bauer_pere_src ON b_bauer_perelinkovka_link (SOURCE_TYPE, SOURCE_ID)',
             'CREATE INDEX ix_bauer_pere_tgt ON b_bauer_perelinkovka_link (TARGET_TYPE, TARGET_ID)',
             'CREATE UNIQUE INDEX ux_bauer_pere_anchor_el ON b_bauer_perelinkovka_anchor (ELEMENT_ID)',
+            'CREATE UNIQUE INDEX ux_bauer_pere_vector ON b_bauer_perelinkovka_vector (VKEY)',
         ];
         foreach ($indexes as $sql) {
             try {

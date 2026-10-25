@@ -21,14 +21,35 @@ class AnchorEngine
         'use_keywords'      => true,
         'use_synonyms'      => true,
         'max_part_words'    => 3,
+        'min_part_words'    => 2,     // части названия короче этого числа слов не берём (однословные слишком общие)
+        'min_target_overlap' => 0.5,  // доля значимых слов названия цели, которые должны встречаться в статье, чтобы брать части названия (0 — не проверять)
+        'max_word_df'       => 0.02,  // анкор из части названия должен содержать слово, встречающееся не более чем в такой доле названий целей (0 — не проверять)
+        'semantic'          => null,  // Embeddings: смысловая близость абзацев и целей (включается в Env::anchorEngine)
+        'top_targets'       => 60,    // сколько ближайших по смыслу целей брать для статьи
+        'min_cosine'        => 0.30,  // минимальная близость абзаца и цели, чтобы поставить ссылку в этом абзаце
+        'max_part_targets'  => 3,     // часть названия, встречающаяся в названиях более чем N целей, неоднозначна и пропускается (0 — выкл.)
         'min_word_len'      => 4,
         'max_links_per_article' => 0, // 0 — без ограничения
         'one_link_per_block' => true,
+        'manual_anchors'    => [],    // ручные анкоры: ["тип:id" => ["фраза", ...]]
+        'unique_anchors'    => false, // один и тот же текст анкора не повторяется в статье
+        'skip_first_block'  => false, // не ставить ссылку в первом абзаце
+        'words_per_link'    => 0,     // не чаще одной ссылки на N слов текста (0 — без ограничения)
         'target_elements'   => true,
         'target_sections'   => true,
         'skip_tags'         => ['h1', 'h2', 'h3', 'h4', 'h5', 'h6', 'a', 'code', 'pre', 'script', 'style'],
         'stop_words'        => ['для', 'при', 'без', 'над', 'под', 'или', 'как', 'что', 'это', 'про'],
     ];
+
+    /** Служебные слова, которых не может быть единственным смыслом анкора (всегда, помимо настройки stop_words). */
+    private const COMMON_WORDS = ['и', 'не', 'на', 'в', 'с', 'по', 'как', 'что', 'это', 'так', 'или', 'для', 'при', 'без', 'его', 'она', 'они',
+        'все', 'вы', 'мы', 'из', 'от', 'до', 'за', 'но', 'же', 'бы', 'то', 'ли', 'да', 'нет', 'про', 'над', 'под', 'чем', 'чтобы', 'если',
+        'когда', 'где', 'почему', 'после', 'между', 'чаще', 'всего', 'лучше', 'больше', 'более', 'зачем', 'какие', 'каким', 'какой', 'можно', 'нужно', 'очень', 'часто', 'также', 'только', 'еще', 'ещё', 'уже', 'себя', 'свой'];
+
+    /** @var array<string,array> фразы целей по "тип:id" (на время жизни объекта) */
+    private array $phraseCache = [];
+    /** @var array{key:string,freq:array<string,int>}|null */
+    private ?array $freqCache = null; // ['key' => ..., 'stats' => corpusStats]
 
     private SynonymProvider $synonyms;
     private array $opt;
@@ -74,18 +95,28 @@ class AnchorEngine
             }
         };
 
+        $manualKey = ($target['type'] ?? 'element') . ':' . (int)$target['id'];
+        foreach ((array)($this->opt['manual_anchors'][$manualKey] ?? []) as $phrase) {
+            $add((string)$phrase, 'ручной');
+        }
+
         $name = (string)($target['name'] ?? '');
         if ($this->opt['use_name']) {
             $add($name, 'название');
         }
         if ($this->opt['use_parts']) {
+            $stop = array_merge($this->opt['stop_words'], self::COMMON_WORDS);
             $nameWords = array_values(array_filter(
                 TextProcessor::words($name),
-                fn($w) => !in_array(mb_strtolower($w['word']), $this->opt['stop_words'], true)
+                fn($w) => !in_array(mb_strtolower($w['word']), $stop, true)
             ));
-            for ($len = max(1, (int)$this->opt['max_part_words']); $len >= 1; $len--) {
+            $minLen = (int)$this->opt['min_word_len'];
+            for ($len = max(1, (int)$this->opt['max_part_words']); $len >= max(1, (int)$this->opt['min_part_words']); $len--) {
                 for ($i = 0; $i + $len <= count($nameWords); $i++) {
                     $slice = array_slice($nameWords, $i, $len);
+                    if (!array_filter($slice, fn($w) => mb_strlen($w['word']) >= max(3, $minLen))) {
+                        continue; // нет ни одного значимого слова
+                    }
                     $add(implode(' ', array_column($slice, 'word')), 'часть названия');
                 }
             }
@@ -104,7 +135,8 @@ class AnchorEngine
         }
 
         $phrases = array_values($found);
-        usort($phrases, fn($a, $b) => count($b['stems']) <=> count($a['stems']));
+        // ручные анкоры идут первыми, остальные — длинные вперёд
+        usort($phrases, fn($a, $b) => [$a['source'] !== 'ручной', count($b['stems'])] <=> [$b['source'] !== 'ручной', count($a['stems'])]);
         return $phrases;
     }
 
@@ -143,8 +175,81 @@ class AnchorEngine
         $textNodes = [];
         $this->collect($root, null, $textNodes);
 
+        // слова узлов считаем один раз; набор основ документа отсекает фразы, которых в тексте заведомо нет
+        $wordCache = [];
+        $stemSet = [];
+        $buildStemSet = function () use (&$stemSet, &$textNodes, &$wordCache) {
+            $stemSet = [];
+            foreach ($textNodes as $info) {
+                $id = spl_object_id($info['node']);
+                $wordCache[$id] ??= TextProcessor::words($info['node']->nodeValue);
+                foreach ($wordCache[$id] as $w) {
+                    $stemSet[$w['stem']] = true;
+                }
+            }
+        };
+        $buildStemSet();
+        $stats = $this->corpusStats($targets);
+        $partFreq = (int)$this->opt['max_part_targets'] > 0 ? $stats['part'] : [];
+        $dfLimit = max(3, (int)ceil((float)$this->opt['max_word_df'] * max(1, count($targets))));
+        $minOverlap = (float)$this->opt['min_target_overlap'];
+
+        // смысловой отбор: цели ближе всего к статье, а ссылка — в самый близкий по смыслу абзац
+        $notice = '';
+        $blockVec = [];
+        $targetVec = [];
+        $semantic = $this->opt['semantic'];
+        if ($semantic instanceof Embeddings) {
+            try {
+                $blocks = [];
+                foreach ($textNodes as $info) {
+                    $blocks[$info['block']] = ($blocks[$info['block']] ?? '') . ' ' . $info['node']->nodeValue;
+                }
+                $blocks = array_filter(array_map('trim', $blocks), fn($t) => mb_strlen($t) >= 40);
+                $targetVec = $semantic->targetVectors($targets);
+                if (!$targetVec) {
+                    $notice = 'Векторы целей не рассчитаны: на вкладке «Настройки» запустите расчёт эмбеддингов.';
+                } elseif ($blocks) {
+                    $vecs = $semantic->embedTexts(array_values($blocks));
+                    $blockVec = array_filter(array_combine(array_keys($blocks), $vecs));
+                }
+            } catch (\Throwable $e) {
+                $notice = 'Эмбеддинги недоступны, использован поиск по словам: ' . $e->getMessage();
+                $blockVec = [];
+            }
+        }
+        $semanticOn = (bool)$blockVec;
+        if ($semanticOn) {
+            $centroid = Embeddings::normalize(array_map('array_sum', array_map(null, ...array_values($blockVec))));
+            $rank = [];
+            foreach ($targets as $ti => $t) {
+                $v = $targetVec[Embeddings::key($t)] ?? null;
+                $manual = !empty($this->opt['manual_anchors'][($t['type'] ?? 'element') . ':' . (int)$t['id']]);
+                if ($v || $manual) {
+                    $rank[$ti] = $v ? Embeddings::dot($centroid, $v) : 1.0;
+                }
+            }
+            arsort($rank);
+            $ranked = [];
+            foreach (array_slice($rank, 0, max(1, (int)$this->opt['top_targets']), true) as $ti => $_) {
+                $ranked[] = $targets[$ti];
+            }
+            $targets = $ranked;
+        }
+        $minCos = (float)$this->opt['min_cosine'];
+
         $matches = [];
+        $usedAnchors = [];
         $limit = (int)$this->opt['max_links_per_article'];
+        $perWords = (int)$this->opt['words_per_link'];
+        if ($perWords > 0) {
+            $words = count(TextProcessor::words(strip_tags($html)));
+            $byDensity = max(1, intdiv($words, $perWords));
+            $limit = $limit > 0 ? min($limit, $byDensity) : $byDensity;
+        }
+        if ($this->opt['skip_first_block'] && $textNodes) {
+            $usedBlocks[$textNodes[0]['block']] = true;
+        }
         foreach ($targets as $target) {
             if ($limit > 0 && count($matches) >= $limit) {
                 break;
@@ -161,12 +266,55 @@ class AnchorEngine
             if (isset($existing[$href])) {
                 continue;
             }
-            foreach ($this->phrasesForTarget($target) as $ph) {
-                $hit = $this->findPhrase($textNodes, $ph['stems'], $usedBlocks);
+            // тематическая связь: значимые слова названия цели должны встречаться в статье
+            $topical = true;
+            // близость абзацев к этой цели
+            $blockScores = null;
+            if ($semanticOn && isset($targetVec[Embeddings::key($target)])) {
+                $blockScores = [];
+                $tv = Embeddings::floats($targetVec[Embeddings::key($target)]);
+                foreach ($blockVec as $b => $bv) {
+                    $blockScores[$b] = Embeddings::dot($tv, $bv);
+                }
+            }
+            if ($minOverlap > 0 && !$semanticOn) {
+                $sig = $this->significantStems((string)($target['name'] ?? ''));
+                if ($sig) {
+                    $hits = count(array_filter($sig, fn($st) => isset($stemSet[$st])));
+                    $topical = $hits >= min(2, count($sig)) && $hits / count($sig) >= $minOverlap;
+                }
+            }
+            foreach ($this->cachedPhrases($target) as $ph) {
+                if ($ph['source'] === 'часть названия') {
+                    if (!$topical) {
+                        continue;
+                    }
+                    if ((float)$this->opt['max_word_df'] > 0) {
+                        // в анкоре минимум два значимых слова, и все они не «общие» для сайта
+                        $ss = $this->significantStems($ph['phrase']);
+                        if (count($ss) < 2 || array_filter($ss, fn($st) => ($stats['df'][$st] ?? 0) > $dfLimit)) {
+                            continue;
+                        }
+                    }
+                }
+                if ($ph['source'] === 'часть названия' && $partFreq && ($partFreq[implode(' ', $ph['stems'])] ?? 0) > (int)$this->opt['max_part_targets']) {
+                    continue; // фраза есть в названиях многих целей — неоднозначна
+                }
+                foreach ($ph['stems'] as $stem) {
+                    if (!isset($stemSet[$stem])) {
+                        continue 2;
+                    }
+                }
+                $hit = $this->findPhrase($textNodes, $ph['stems'], $usedBlocks, $wordCache, $blockScores, $minCos);
                 if (!$hit) {
                     continue;
                 }
                 [$ni, $start, $end, $block] = $hit;
+                $anchorKey = mb_strtolower(substr($textNodes[$ni]['node']->nodeValue, $start, $end - $start));
+                if ($this->opt['unique_anchors'] && isset($usedAnchors[$anchorKey])) {
+                    continue;
+                }
+                $usedAnchors[$anchorKey] = true;
                 if ($this->opt['one_link_per_block']) {
                     $usedBlocks[$block] = true;
                 }
@@ -181,6 +329,7 @@ class AnchorEngine
                     'anchor'      => $anchor,
                     'phrase'      => $ph['phrase'],
                     'source'      => $ph['source'],
+                    'score'       => $blockScores !== null ? round($blockScores[$block] ?? 0, 3) : null,
                     'context'     => [
                         'left'  => mb_strcut($text, max(0, $start - 50), $start - max(0, $start - 50), 'UTF-8'),
                         'match' => $anchor,
@@ -202,6 +351,7 @@ class AnchorEngine
                     ['node' => $before, 'block' => $block],
                     ['node' => $afterNode, 'block' => $block],
                 ]);
+                $buildStemSet();
                 break; // одна ссылка на цель
             }
         }
@@ -210,7 +360,7 @@ class AnchorEngine
         foreach ($root->childNodes as $child) {
             $out .= $dom->saveHTML($child);
         }
-        return ['html' => $apply ? $out : $html, 'matches' => $matches];
+        return ['html' => $apply ? $out : $html, 'matches' => $matches, 'notice' => $notice];
     }
 
     /**
@@ -271,15 +421,66 @@ class AnchorEngine
     /**
      * @return array|null [индекс узла, начало, конец (байты), id блока]
      */
-    private function findPhrase(array $textNodes, array $stems, array $usedBlocks): ?array
+    private function cachedPhrases(array $target): array
+    {
+        $k = ($target['type'] ?? 'element') . ':' . (int)$target['id'];
+        return $this->phraseCache[$k] ??= $this->phrasesForTarget($target);
+    }
+
+    /** Основы значимых слов названия (без служебных и коротких). */
+    private function significantStems(string $name): array
+    {
+        $stop = array_merge($this->opt['stop_words'], self::COMMON_WORDS);
+        $minLen = max(3, (int)$this->opt['min_word_len']);
+        $stems = [];
+        foreach (TextProcessor::words($name) as $w) {
+            if (mb_strlen($w['word']) >= $minLen && !in_array(mb_strtolower($w['word']), $stop, true)) {
+                $stems[$w['stem']] = true;
+            }
+        }
+        return array_keys($stems);
+    }
+
+    /**
+     * Статистика по названиям целей: part — в скольких целях встречается каждая фраза-часть названия,
+     * df — в скольких названиях встречается основа слова.
+     * @return array{part:array<string,int>,df:array<string,int>}
+     */
+    private function corpusStats(array $targets): array
+    {
+        $key = count($targets) . ':' . ($targets[0]['id'] ?? 0) . ':' . (end($targets)['id'] ?? 0);
+        if ($this->freqCache && $this->freqCache['key'] === $key) {
+            return $this->freqCache['stats'];
+        }
+        $freq = [];
+        $df = [];
+        foreach ($targets as $t) {
+            foreach ($this->significantStems((string)($t['name'] ?? '')) as $st) {
+                $df[$st] = ($df[$st] ?? 0) + 1;
+            }
+            foreach ($this->cachedPhrases($t) as $ph) {
+                if ($ph['source'] === 'часть названия') {
+                    $k = implode(' ', $ph['stems']);
+                    $freq[$k] = ($freq[$k] ?? 0) + 1;
+                }
+            }
+        }
+        $stats = ['part' => $freq, 'df' => $df];
+        $this->freqCache = ['key' => $key, 'stats' => $stats];
+        return $stats;
+    }
+
+    private function findPhrase(array $textNodes, array $stems, array $usedBlocks, array &$wordCache, ?array $blockScores = null, float $minCos = 0.0): ?array
     {
         $n = count($stems);
+        $best = null;
+        $bestScore = -1.0;
         foreach ($textNodes as $ni => $info) {
             if (isset($usedBlocks[$info['block']])) {
                 continue;
             }
             $text = $info['node']->nodeValue;
-            $words = TextProcessor::words($text);
+            $words = $wordCache[spl_object_id($info['node'])] ??= TextProcessor::words($text);
             for ($i = 0; $i + $n <= count($words); $i++) {
                 for ($j = 0; $j < $n; $j++) {
                     if ($words[$i + $j]['stem'] !== $stems[$j]) {
@@ -294,10 +495,20 @@ class AnchorEngine
                     }
                 }
                 if ($j === $n) {
-                    return [$ni, $words[$i]['start'], $words[$i + $n - 1]['end'], $info['block']];
+                    $hit = [$ni, $words[$i]['start'], $words[$i + $n - 1]['end'], $info['block']];
+                    if ($blockScores === null) {
+                        return $hit;
+                    }
+                    // со смысловой оценкой берём вхождение в самом близком абзаце, не ниже порога
+                    $sc = $blockScores[$info['block']] ?? -1.0;
+                    if ($sc >= $minCos && $sc > $bestScore) {
+                        $best = $hit;
+                        $bestScore = $sc;
+                    }
+                    break; // одного вхождения на текстовый узел достаточно
                 }
             }
         }
-        return null;
+        return $best;
     }
 }

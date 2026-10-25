@@ -43,16 +43,21 @@ def process(css):
 
 src = ''.join((root / f).read_text(encoding='utf-8') + '\n' for f in ('base.css', 'modern.css'))
 res = process(src)
+# Родные элементы Битрикса (список, фильтр) лежат в .bp-native — наш сброс и размеры их не трогают
+res = res.replace('#bp-app *{', '#bp-app :where(*:not(.bp-native):not(.bp-native *)){', 1)
 # Битрикс задаёт свои шрифты и отступы: возвращаем нашу рамку
 res = '#bp-app{font-family:Inter,-apple-system,"Segoe UI",Roboto,Arial,sans-serif;font-size:14px;color:#1f2937;margin:-8px -10px;}\n' + res
 # Битрикс задаёт свои высоты и line-height для полей — возвращаем читаемые размеры
 res += '''
-#bp-app select, #bp-app input[type=text], #bp-app input[type=number], #bp-app input[type=search], #bp-app input:not([type]), #bp-app textarea {
+#bp-app select:not(.bp-native *), #bp-app input[type=text]:not(.bp-native *), #bp-app input[type=number]:not(.bp-native *), #bp-app input[type=search]:not(.bp-native *), #bp-app input:not([type]):not(.bp-native *), #bp-app textarea:not(.bp-native *) {
   box-sizing: border-box !important; height: auto !important; min-height: 36px !important; line-height: 1.4 !important;
   padding: 7px 12px !important; font-size: 14px !important; font-family: inherit !important; color: #1f2937 !important; margin: 0;
 }
-#bp-app select { padding-right: 30px !important; }
+#bp-app select:not(.bp-native *) { padding-right: 30px !important; }
 #bp-app .bx-btn { line-height: 1.4 !important; height: auto !important; }
+/* ссылки в строках родного списка Битрикса — стандартный синий, а не цвет ссылок модуля */
+#bp-app .bp-native .adm-list-table-row .adm-list-table-cell a { color: #2067b0; text-decoration: none; }
+#bp-app .bp-native .adm-list-table-row .adm-list-table-cell a:hover { color: #2067b0; text-decoration: underline; }
 #bp-app input[type=checkbox], #bp-app input[type=radio] { height: auto !important; min-height: 0 !important; padding: 0 !important; }
 '''
 (root / 'admin.css').write_text(res, encoding='utf-8')

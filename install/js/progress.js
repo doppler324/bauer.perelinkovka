@@ -66,7 +66,19 @@
     };
     Panel.prototype.close = function () { clearInterval(this.timer); this.ov.remove(); };
 
-    function api(params) {
+    // Первый полный JSON-объект из ответа: если сервер или Битрикс дописал что-то после него, это не мешает
+    function firstJson(t) {
+        var s = t.indexOf('{'), depth = 0, str = false, esc = false;
+        if (s < 0) { return t; }
+        for (var i = s; i < t.length; i++) {
+            var c = t.charAt(i);
+            if (str) { if (esc) { esc = false; } else if (c === '\\') { esc = true; } else if (c === '"') { str = false; } continue; }
+            if (c === '"') { str = true; } else if (c === '{') { depth++; } else if (c === '}' && --depth === 0) { return t.slice(s, i + 1); }
+        }
+        return t;
+    }
+
+    function api(params, retried) {
         var body = new URLSearchParams();
         if (window.BP_SESSID) { body.append('sessid', window.BP_SESSID); }
         Object.keys(params).forEach(function (k) {
@@ -75,11 +87,16 @@
         });
         return fetch(window.BP_API || 'progress_api.php', {method: 'POST', body: body, credentials: 'same-origin'}).then(function (r) {
             return r.text().then(function (t) {
-                try { return JSON.parse(t); } catch (e) {
-                    throw new Error('Сервер вернул не JSON (HTTP ' + r.status + '): ' + t.replace(/<[^>]*>/g, ' ').replace(/\s+/g, ' ').trim().slice(0, 300));
+                try { return JSON.parse(firstJson(t)); } catch (e) {
+                    var plain = t.replace(/<[^>]*>/g, ' ').replace(/\s+/g, ' ').trim();
+                    throw new Error('Сервер вернул не JSON (HTTP ' + r.status + ', ' + t.length + ' байт): ' + plain.slice(0, 150) + (plain.length > 300 ? ' … ' + plain.slice(-150) : ''));
                 }
             });
-        }).then(function (j) { if (!j.ok) { throw new Error(j.error || 'ошибка'); } return j; });
+        }).then(function (j) {
+            if (!j.ok && j.sessid && !retried) { window.BP_SESSID = j.sessid; return api(params, true); }
+            if (!j.ok) { throw new Error(j.error || 'ошибка'); }
+            return j;
+        });
     }
 
     function formParams(form) {
@@ -177,6 +194,34 @@
         }
     }
 
+    // ---------- Эмбеддинги целей ----------
+    function runEmbIndex() {
+        // поле модели на странице должно совпадать с сохранённой: расчёт идёт по сохранённым настройкам
+        var btn = document.getElementById('embIndexBtn'), field = document.querySelector('input[name="embedding_model"]');
+        if (btn && field && btn.getAttribute('data-model') !== field.value.trim()) {
+            alert('Модель в поле («' + field.value.trim() + '») не сохранена, расчёт идёт по сохранённой («' + btn.getAttribute('data-model') + '»). Нажмите «Сохранить» и запустите расчёт снова.');
+            return;
+        }
+        var p = new Panel('Расчёт эмбеддингов целей', ['Подготовка', 'Расчёт векторов', 'Готово']);
+        api({step: 'emb_init'}).then(function (init) {
+            var keys = init.keys, i = 0, embedded = 0, tokens = 0;
+            if (!keys.length) { p.close(); alert('Нет целей: проверьте настройки анкоров.'); return; }
+            if (!confirm('Модель: ' + init.model + '. Целей: ' + keys.length + '. Оценка: около ' + init.tokens + ' токенов, ' + init.cost + ' $ для text-embedding-3-small (пересчитываются только новые и изменённые). Продолжить?')) { p.close(); return; }
+            p.stage(1);
+            (function step() {
+                if (p.cancelled) { return finish(); }
+                api({step: 'emb_index', keys: keys.slice(i, i + 48)}).then(function (r) {
+                    embedded += r.embedded; tokens += r.tokens; i += 48;
+                    p.set(Math.min(i, keys.length), keys.length, 'Обработано целей: ' + Math.min(i, keys.length) + ' из ' + keys.length + ' · рассчитано новых: ' + embedded);
+                    if (i >= keys.length) { finish(); } else { step(); }
+                }).catch(function (e) { p.fail(e.message); });
+            })();
+            function finish() { p.stage(2); p.close(); bpNav('?tab=anchor_settings&emb_done=' + embedded + '_' + keys.length); }
+        }).catch(function (e) { p.fail(e.message); });
+    }
+
+    window.bpRunEmbIndex = runEmbIndex;
+
     // Перехватываем отправку форм раньше общего ajaxnav
     document.addEventListener('submit', function (e) {
         var f = e.target;
@@ -186,6 +231,8 @@
             e.preventDefault(); e.stopImmediatePropagation(); runLinks(f, act);
         } else if (f.id === 'anchorsPlanForm') {
             e.preventDefault(); e.stopImmediatePropagation(); runAnchorsPlan(f);
+        } else if (f.id === 'embIndexForm') {
+            e.preventDefault(); e.stopImmediatePropagation(); runEmbIndex();
         } else if (f.id === 'anchorsApplyForm') {
             e.preventDefault(); e.stopImmediatePropagation(); runAnchorsApply(f);
         }

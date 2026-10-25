@@ -109,6 +109,17 @@ class BitrixDataProvider implements DataProviderInterface
         return array_values($result);
     }
 
+    public function getArticleList(int $iblockId): array
+    {
+        $rows = ElementTable::getList([
+            'filter' => $this->elementFilter(['iblock_id' => $iblockId, 'has_text' => true]),
+            'select' => ['ID', 'IBLOCK_ID', 'IBLOCK_SECTION_ID', 'NAME'],
+            'order' => ['ID' => 'ASC'],
+        ])->fetchAll();
+        return array_map(fn($r) => ['id' => (int)$r['ID'], 'iblock_id' => (int)$r['IBLOCK_ID'],
+            'section_id' => (int)$r['IBLOCK_SECTION_ID'], 'name' => (string)$r['NAME']], $rows);
+    }
+
     public function countElements(array $filter = []): int
     {
         return (int)ElementTable::getCount($this->elementFilter($filter));
