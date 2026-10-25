@@ -1,0 +1,6 @@
+.pl-list { --pl-accent: #4f46e5; margin: 24px 0; }
+.pl-list__title { margin: 0 0 10px; font-size: 18px; }
+.pl-list__items { margin: 0; padding-left: 20px; }
+.pl-list__item { margin: 4px 0; }
+.pl-list__item a { color: var(--pl-accent); text-decoration: none; }
+.pl-list__item a:hover { text-decoration: underline; }

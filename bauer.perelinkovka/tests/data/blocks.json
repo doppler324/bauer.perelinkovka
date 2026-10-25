@@ -1,0 +1,29 @@
+[
+    {
+        "code": "similar_products",
+        "name": "Похожие товары",
+        "active": true,
+        "sort": 100,
+        "source_type": "element",
+        "source_iblock_id": 1,
+        "target_type": "element",
+        "target_iblock_ids": [1],
+        "max_links": 6,
+        "balance": 0.5,
+        "min_score": 0.15,
+        "strategies": ["keyword", "tfidf"]
+    },
+    {
+        "code": "related_sections",
+        "name": "Связанные разделы",
+        "active": true,
+        "sort": 200,
+        "source_type": "section",
+        "source_iblock_id": 1,
+        "target_type": "section",
+        "target_iblock_ids": [1],
+        "max_links": 4,
+        "min_score": 0.05,
+        "strategies": ["keyword"]
+    }
+]

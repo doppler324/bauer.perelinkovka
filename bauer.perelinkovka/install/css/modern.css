@@ -1,0 +1,149 @@
+/* Современная тема тестовой админки: подключается после основных стилей и переопределяет их. */
+:root {
+    --bg: #f5f7fb; --card: #ffffff; --line: #e5e9f0; --text: #1f2937; --muted: #6b7280;
+    --primary: #4f46e5; --primary-d: #4338ca; --primary-l: #eef2ff;
+    --ok: #16a34a; --ok-l: #dcfce7; --warn: #d97706; --warn-l: #fef3c7; --err: #dc2626; --err-l: #fee2e2; --info: #0284c7; --info-l: #e0f2fe;
+    --radius: 12px; --shadow: 0 1px 2px rgba(16,24,40,.05), 0 1px 3px rgba(16,24,40,.08);
+}
+body { background: var(--bg) !important; color: var(--text); font-family: Inter, -apple-system, "Segoe UI", Roboto, Arial, sans-serif !important; font-size: 14px; -webkit-font-smoothing: antialiased; }
+a { color: var(--primary); }
+
+/* Верхняя панель и меню */
+.bx-top-panel { background: #111827 !important; border: 0 !important; padding: 12px 24px !important; }
+.bx-top-panel .logo { letter-spacing: .3px; }
+.bx-top-panel .breadcrumbs { color: #9ca3af !important; }
+.bx-menu { background: var(--card) !important; border: 0 !important; border-bottom: 1px solid var(--line) !important; padding: 8px 24px 0 !important; gap: 4px; display: flex; flex-wrap: wrap; }
+.bx-menu[style] { background: #1f2937 !important; border-bottom: 0 !important; padding: 8px 24px !important; }
+.bx-menu a { color: var(--muted) !important; border: 0 !important; border-radius: 8px 8px 0 0; padding: 10px 16px !important; font-weight: 500; transition: .15s; position: relative; }
+.bx-menu a:hover { color: var(--text) !important; background: #f3f4f6 !important; }
+.bx-menu a.active { color: var(--primary) !important; background: transparent !important; }
+.bx-menu a.active::after { content: ""; position: absolute; left: 10px; right: 10px; bottom: -1px; height: 2px; background: var(--primary); border-radius: 2px; }
+.bx-menu[style] a { color: #cbd5e1 !important; border-radius: 8px; }
+.bx-menu[style] a:hover { background: rgba(255,255,255,.08) !important; color: #fff !important; }
+.bx-menu[style] a.active { background: var(--primary) !important; color: #fff !important; }
+.bx-menu[style] a.active::after { display: none; }
+.bx-content { max-width: 1280px; margin: 0 auto; padding: 24px !important; }
+.bx-page-title { font-size: 24px !important; font-weight: 700; margin: 0 0 8px !important; color: var(--text) !important; }
+h2 { font-size: 18px; margin: 28px 0 10px; } h3 { font-size: 15px; }
+
+/* Кнопки */
+.bx-btn { border: 1px solid var(--line) !important; background: #fff !important; color: var(--text) !important; border-radius: 8px !important; padding: 8px 14px !important; font-weight: 500; box-shadow: var(--shadow); transition: .15s; text-decoration: none; display: inline-block; cursor: pointer; }
+.bx-btn:hover { background: #f9fafb !important; border-color: #cbd5e1 !important; }
+.bx-btn-sm { padding: 5px 10px !important; font-size: 12px !important; }
+.bx-btn-primary { background: var(--primary) !important; border-color: var(--primary) !important; color: #fff !important; }
+.bx-btn-primary:hover { background: var(--primary-d) !important; border-color: var(--primary-d) !important; }
+.bx-btn-success { background: var(--ok) !important; border-color: var(--ok) !important; color: #fff !important; }
+.bx-btn-success:hover { background: #15803d !important; }
+.bx-btn-danger { background: #fff !important; border-color: #fecaca !important; color: var(--err) !important; }
+.bx-btn-danger:hover { background: var(--err-l) !important; }
+
+/* Поля */
+input[type=text], input[type=number], input[type=password], select, textarea { border: 1px solid #d1d5db !important; border-radius: 8px !important; padding: 8px 10px !important; background: #fff; color: var(--text); font-size: 14px; transition: .15s; }
+input:focus, select:focus, textarea:focus { outline: 0; border-color: var(--primary) !important; box-shadow: 0 0 0 3px rgba(79,70,229,.15); }
+input[type=checkbox], input[type=radio] { accent-color: var(--primary); width: 16px; height: 16px; }
+
+/* Таблицы */
+.bx-table-wrap { background: var(--card) !important; border: 1px solid var(--line) !important; border-radius: var(--radius) !important; box-shadow: var(--shadow); overflow: hidden; }
+.bx-table-toolbar { background: #fafbfc !important; border-bottom: 1px solid var(--line) !important; padding: 12px 16px !important; }
+table.bx-table { width: 100%; border-collapse: collapse; }
+table.bx-table th { background: #f9fafb !important; color: var(--muted) !important; font-size: 11px !important; font-weight: 600; text-transform: uppercase; letter-spacing: .5px; padding: 12px 16px !important; border-bottom: 1px solid var(--line) !important; text-align: left; }
+table.bx-table td { padding: 12px 16px !important; border-bottom: 1px solid #f1f3f6 !important; vertical-align: middle; }
+table.bx-table tbody tr:last-child td { border-bottom: 0 !important; }
+table.bx-table tbody tr:hover td { background: #f8faff !important; }
+table.bx-table tr.bx-row-selected td { background: var(--primary-l) !important; }
+table.bx-table td.actions { white-space: nowrap; text-align: right; }
+table.bx-table td.actions form, table.bx-table td.actions .bx-btn { margin-left: 4px; }
+
+/* Бейджи и плашки */
+.badge, .entity-type { border-radius: 999px !important; padding: 3px 10px !important; font-size: 11px !important; font-weight: 600; }
+.badge-keyword, .badge-related, .badge-strong { background: var(--ok-l) !important; color: #166534 !important; }
+.badge-tfidf { background: var(--info-l) !important; color: #075985 !important; }
+.badge-embedding { background: var(--primary-l) !important; color: var(--primary-d) !important; }
+.badge-manual { background: var(--warn-l) !important; color: #92400e !important; }
+.badge-medium { background: var(--warn-l) !important; color: #92400e !important; }
+.badge-weak { background: var(--err-l) !important; color: #991b1b !important; }
+.pill { display: inline-block; padding: 2px 10px; border-radius: 999px; font-size: 11px; font-weight: 600; background: #f3f4f6; color: #374151; }
+.pill-on { background: var(--ok-l); color: #166534; } .pill-off { background: #f3f4f6; color: #9ca3af; }
+.pill-strong { background: var(--ok-l); color: #166534; } .pill-medium { background: var(--warn-l); color: #92400e; } .pill-weak { background: var(--err-l); color: #991b1b; }
+.pill-manual { background: var(--warn-l); color: #92400e; } .pill-auto { background: var(--info-l); color: #075985; }
+code { background: #f3f4f6; border-radius: 6px; padding: 2px 6px; font-size: 12px; }
+
+/* Уведомления */
+.bx-notification { border: 0 !important; border-left: 4px solid !important; border-radius: 8px !important; padding: 12px 16px !important; margin: 12px 0 !important; box-shadow: var(--shadow); }
+.bx-notification-success { background: var(--ok-l) !important; border-color: var(--ok) !important; color: #166534 !important; }
+.bx-notification-info { background: var(--info-l) !important; border-color: var(--info) !important; color: #075985 !important; }
+.bx-notification-warning { background: var(--warn-l) !important; border-color: var(--warn) !important; color: #92400e !important; }
+.bx-notification-error { background: var(--err-l) !important; border-color: var(--err) !important; color: #991b1b !important; }
+
+/* Карточки, вкладки настроек, статистика, окна */
+.bx-stat-card, .bx-settings-section, .bx-filter, .progress-container { background: var(--card) !important; border: 1px solid var(--line) !important; border-radius: var(--radius) !important; box-shadow: var(--shadow); }
+.bx-tabs { border-bottom: 1px solid var(--line) !important; } .bx-tabs a.active { color: var(--primary) !important; border-color: var(--primary) !important; }
+.modal { border-radius: 16px !important; box-shadow: 0 20px 50px rgba(0,0,0,.25) !important; overflow: hidden; }
+.modal-header { background: #f9fafb !important; border-bottom: 1px solid var(--line) !important; font-weight: 600; }
+
+/* Вкладки «Блоки» и «Связи» */
+.blk-form, .lnk-card { border: 1px solid var(--line) !important; border-radius: var(--radius) !important; box-shadow: var(--shadow); background: var(--card) !important; }
+.blk-form fieldset { border: 1px solid var(--line) !important; border-radius: 10px !important; background: #fcfcfd; }
+.blk-form legend { color: var(--primary) !important; }
+.lnk-card h3 { color: var(--text); }
+
+/* ===== Отступы и ритм ===== */
+.bx-content > * + * { margin-top: 16px; }
+.bx-content > h1.bx-page-title { margin-top: 0; margin-bottom: 4px !important; }
+.bx-content > h2 { margin-top: 32px; margin-bottom: 0; }
+.bx-content > h3 { margin-top: 24px; margin-bottom: 0; }
+.bx-content > p { margin-top: 4px; line-height: 1.55; }
+.bx-content > p + * { margin-top: 18px; }
+.bx-table-wrap, .bx-stat-card, .bx-settings-section, .lnk-card, .st-card { margin-bottom: 0; }
+.bx-table-toolbar { gap: 12px; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; }
+.bx-table-toolbar .left, .bx-table-toolbar .right { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; }
+table.bx-table th:first-child, table.bx-table td:first-child { padding-left: 20px !important; }
+table.bx-table th:last-child, table.bx-table td:last-child { padding-right: 20px !important; }
+table.bx-table td.actions { display: table-cell; }
+table.bx-table td.actions .bx-btn, table.bx-table td.actions form { margin: 0 0 0 6px; }
+table.bx-table td.actions form { display: inline-block; }
+
+/* Группы кнопок и форм */
+.bx-btn + .bx-btn, button + .bx-btn, .bx-btn + button { margin-left: 8px; }
+.lnk-actions, .blk-actions { gap: 10px; margin-top: 16px; }
+.lnk-actions .bx-btn, .blk-actions .bx-btn { margin: 0 !important; }
+form + form, form + .bx-table-wrap, .bx-table-wrap + form, .bx-table-wrap + div, div + .bx-table-wrap { margin-top: 16px; }
+.bx-content form[method=get] { margin: 16px 0 !important; padding: 12px 14px; background: #fff; border: 1px solid var(--line); border-radius: var(--radius); box-shadow: var(--shadow); gap: 10px !important; }
+.bx-content form[method=post] .bx-btn { vertical-align: middle; }
+.bx-content > form[method=post] { margin-top: 16px; }
+
+/* Карточки и формы блока */
+.lnk-grid { gap: 20px !important; margin: 20px 0 28px !important; }
+.lnk-card { padding: 20px 22px !important; }
+.lnk-card .sub { margin-bottom: 16px !important; line-height: 1.45; }
+.lnk-row { margin-bottom: 12px !important; gap: 8px 16px !important; }
+.blk-form { padding: 24px 26px !important; }
+.blk-form fieldset { padding: 16px 20px 8px !important; margin: 0 0 20px !important; }
+.blk-row { margin-bottom: 14px !important; gap: 6px 20px !important; }
+.blk-row .blk-hint { margin-top: 0 !important; line-height: 1.45; }
+.blk-inline { gap: 10px 22px !important; }
+
+/* Уведомления, карточки статистики, пагинация */
+.bx-notification { margin: 16px 0 !important; line-height: 1.5; }
+.st-cards { gap: 16px !important; margin: 18px 0 24px !important; }
+.st-card { padding: 16px 18px !important; }
+.bx-content > div[style*="padding:14px 18px"] { padding: 18px 22px !important; }
+.bx-content > div > .bx-btn-sm, .bx-content > div > a.bx-btn-sm { margin: 4px 4px 0 0; }
+.bx-settings-section { padding: 20px 24px !important; margin-bottom: 16px; }
+.bx-settings-row { padding: 6px 0; }
+.modal-body { padding: 22px !important; } .modal-footer { padding: 14px 22px !important; gap: 10px; }
+
+/* Настройки: ровные строки */
+.bx-settings-row { display: flex; align-items: flex-start; gap: 16px; padding: 10px 0 !important; }
+.bx-settings-row > label:first-child { min-width: 260px; padding-top: 8px; }
+.bx-settings-row label { line-height: 1.5; }
+.bx-settings-row input[type=number], .bx-settings-row input[type=text] { width: 110px; min-width: 110px !important; }
+.bx-settings-row .hint { padding-top: 8px; }
+.bx-settings-row label > input[type=checkbox] { margin-right: 8px; vertical-align: -3px; }
+.bx-settings-section h3 { margin: 0 0 12px !important; padding-bottom: 12px; border-bottom: 1px solid var(--line); }
+.bx-content > form > .bx-btn, .bx-content > form > a.bx-btn { margin-top: 4px; }
+
+/* Блоки на всю ширину страницы */
+.st-cards, .lnk-grid, .bx-content > div[style*="max-width"] { max-width: none !important; width: 100%; box-sizing: border-box; }
+.st-cards { grid-template-columns: repeat(5, 1fr) !important; }
+@media (max-width: 900px) { .st-cards { grid-template-columns: repeat(2, 1fr) !important; } }

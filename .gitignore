@@ -1,0 +1,7 @@
+dist/
+tests/config.local.php
+**/tests/config.local.php
+*.zip
+.env
+.DS_Store
+Thumbs.db

@@ -1,0 +1,110 @@
+[
+    {
+        "id": 1,
+        "iblock_id": 1,
+        "code": "elektronika",
+        "name": "Электроника",
+        "description": "Товары из мира электроники: смартфоны, ноутбуки, аксессуары",
+        "parent_id": null,
+        "sort": 100
+    },
+    {
+        "id": 2,
+        "iblock_id": 1,
+        "code": "smartfony",
+        "name": "Смартфоны",
+        "description": "Мобильные телефоны и смартфоны всех брендов",
+        "parent_id": 1,
+        "sort": 110
+    },
+    {
+        "id": 3,
+        "iblock_id": 1,
+        "code": "noutbuki",
+        "name": "Ноутбуки",
+        "description": "Ноутбуки для работы, учёбы и игр",
+        "parent_id": 1,
+        "sort": 120
+    },
+    {
+        "id": 4,
+        "iblock_id": 1,
+        "code": "aksessuary",
+        "name": "Аксессуары",
+        "description": "Чехлы, наушники, зарядные устройства и другие аксессуары",
+        "parent_id": 1,
+        "sort": 130
+    },
+    {
+        "id": 5,
+        "iblock_id": 1,
+        "code": "bytovaya-tekhnika",
+        "name": "Бытовая техника",
+        "description": "Техника для дома и кухни",
+        "parent_id": null,
+        "sort": 200
+    },
+    {
+        "id": 6,
+        "iblock_id": 1,
+        "code": "kholodilniki",
+        "name": "Холодильники",
+        "description": "Холодильники и морозильные камеры",
+        "parent_id": 5,
+        "sort": 210
+    },
+    {
+        "id": 7,
+        "iblock_id": 1,
+        "code": "stiralnye-mashiny",
+        "name": "Стиральные машины",
+        "description": "Стиральные и сушильные машины",
+        "parent_id": 5,
+        "sort": 220
+    },
+    {
+        "id": 8,
+        "iblock_id": 2,
+        "code": "tekhnologii",
+        "name": "Технологии",
+        "description": "Статьи о современных технологиях и гаджетах",
+        "parent_id": null,
+        "sort": 100
+    },
+    {
+        "id": 9,
+        "iblock_id": 2,
+        "code": "sovety",
+        "name": "Советы покупателям",
+        "description": "Полезные советы по выбору и использованию товаров",
+        "parent_id": 8,
+        "sort": 110
+    },
+    {
+        "id": 10,
+        "iblock_id": 2,
+        "code": "novosti",
+        "name": "Новости компании",
+        "description": "Новости и анонсы компании",
+        "parent_id": null,
+        "sort": 200
+    },
+    {
+        "id": 11,
+        "iblock_id": 3,
+        "code": "remont",
+        "name": "Ремонт техники",
+        "description": "Услуги по ремонту электроники и бытовой техники",
+        "parent_id": null,
+        "sort": 100
+    },
+    {
+        "id": 12,
+        "iblock_id": 3,
+        "code": "dostavka",
+        "name": "Доставка и сборка",
+        "description": "Услуги доставки, подъёма и сборки мебели и техники",
+        "parent_id": null,
+        "sort": 200
+    }
+]

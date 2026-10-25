@@ -1,0 +1,374 @@
+[
+    {
+        "id": 1,
+        "iblock_id": 1,
+        "section_id": 2,
+        "code": "iphone-15-pro",
+        "name": "iPhone 15 Pro 256GB",
+        "description": "Флагманский смартфон Apple с титановым корпусом, процессором A17 Pro и улучшенной камерой. Поддерживает USB-C и имеет кнопку Action.",
+        "keywords": [
+            "iPhone",
+            "Apple",
+            "смартфон",
+            "флагман",
+            "A17 Pro"
+        ],
+        "price": 119990,
+        "active": true
+    },
+    {
+        "id": 2,
+        "iblock_id": 1,
+        "section_id": 2,
+        "code": "samsung-galaxy-s24",
+        "name": "Samsung Galaxy S24 Ultra",
+        "description": "Премиальный смартфон Samsung с экраном Dynamic AMOLED 2X, процессором Exynos 2400 и стилусом S-Pen в комплекте.",
+        "keywords": [
+            "Samsung",
+            "смартфон",
+            "флагман",
+            "Android",
+            "S-Pen"
+        ],
+        "price": 109990,
+        "active": true
+    },
+    {
+        "id": 3,
+        "iblock_id": 1,
+        "section_id": 2,
+        "code": "xiaomi-14-pro",
+        "name": "Xiaomi 14 Pro",
+        "description": "Мощный смартфон Xiaomi с камерой Leica, процессором Snapdragon 8 Gen 3 и быстрой зарядкой 120W.",
+        "keywords": [
+            "Xiaomi",
+            "смартфон",
+            "Leica",
+            "Snapdragon",
+            "Android"
+        ],
+        "price": 79990,
+        "active": true
+    },
+    {
+        "id": 4,
+        "iblock_id": 1,
+        "section_id": 3,
+        "code": "macbook-pro-16",
+        "name": "MacBook Pro 16\" M3 Max",
+        "description": "Профессиональный ноутбук Apple с чипом M3 Max, 36GB RAM и 1TB SSD. Идеален для разработки, видео-монтажа и дизайна.",
+        "keywords": [
+            "Apple",
+            "ноутбук",
+            "M3 Max",
+            "MacBook",
+            "профессиональный"
+        ],
+        "price": 349990,
+        "active": true
+    },
+    {
+        "id": 5,
+        "iblock_id": 1,
+        "section_id": 3,
+        "code": "lenovo-thinkpad-x1",
+        "name": "Lenovo ThinkPad X1 Carbon Gen 11",
+        "description": "Лёгкий и надёжный ноутбук для бизнеса с процессором Intel Core i7, 16GB RAM и корпусом из углеродного волокна.",
+        "keywords": [
+            "Lenovo",
+            "ноутбук",
+            "бизнес",
+            "ThinkPad",
+            "Intel"
+        ],
+        "price": 189990,
+        "active": true
+    },
+    {
+        "id": 6,
+        "iblock_id": 1,
+        "section_id": 3,
+        "code": "asus-rog-zephyrus",
+        "name": "ASUS ROG Zephyrus G14",
+        "description": "Игровой ноутбук с экраном 14\", процессором AMD Ryzen 9 и видеокартой NVIDIA RTX 4070. Компактный и производительный.",
+        "keywords": [
+            "ASUS",
+            "ноутбук",
+            "игровой",
+            "ROG",
+            "Ryzen",
+            "NVIDIA"
+        ],
+        "price": 219990,
+        "active": true
+    },
+    {
+        "id": 7,
+        "iblock_id": 1,
+        "section_id": 4,
+        "code": "airpods-pro-2",
+        "name": "AirPods Pro 2",
+        "description": "Беспроводные наушники Apple с активным шумоподавлением, пространственным аудио и улучшенным качеством звука.",
+        "keywords": [
+            "Apple",
+            "наушники",
+            "AirPods",
+            "беспроводные",
+            "шумоподавление"
+        ],
+        "price": 24990,
+        "active": true
+    },
+    {
+        "id": 8,
+        "iblock_id": 1,
+        "section_id": 4,
+        "code": "chekhol-iphone-15",
+        "name": "Чехол-книжка для iPhone 15 Pro",
+        "description": "Кожаный чехол-книжка для iPhone 15 Pro с отделением для карт и поддержкой MagSafe.",
+        "keywords": [
+            "Apple",
+            "iPhone",
+            "чехол",
+            "аксессуар",
+            "MagSafe"
+        ],
+        "price": 4990,
+        "active": true
+    },
+    {
+        "id": 9,
+        "iblock_id": 1,
+        "section_id": 6,
+        "code": "lg-instaview",
+        "name": "Холодильник LG InstaView Door-in-Door",
+        "description": "Двухкамерный холодильник LG с системой Door-in-Door, технологией InstaView и линейным инверторным компрессором.",
+        "keywords": [
+            "LG",
+            "холодильник",
+            "InstaView",
+            "Door-in-Door",
+            "инверторный"
+        ],
+        "price": 89990,
+        "active": true
+    },
+    {
+        "id": 10,
+        "iblock_id": 1,
+        "section_id": 6,
+        "code": "samsung-bes5000",
+        "name": "Холодильник Samsung Bespoke 5000",
+        "description": "Стильный холодильник Samsung с технологией No Frost, металлическим охлаждением и умной диагностикой.",
+        "keywords": [
+            "Samsung",
+            "холодильник",
+            "No Frost",
+            "Bespoke",
+            "умный"
+        ],
+        "price": 79990,
+        "active": true
+    },
+    {
+        "id": 11,
+        "iblock_id": 1,
+        "section_id": 7,
+        "code": "lg-f2v5gs0w",
+        "name": "Стиральная машина LG F2V5GS0W",
+        "description": "Узкая стиральная машина LG с загрузкой 7 кг, инверторным двигателем и функцией стирки паром.",
+        "keywords": [
+            "LG",
+            "стиральная машина",
+            "инверторный",
+            "пар",
+            "узкая"
+        ],
+        "price": 45990,
+        "active": true
+    },
+    {
+        "id": 12,
+        "iblock_id": 1,
+        "section_id": 7,
+        "code": "samsung-wd80t",
+        "name": "Стиральная машина Samsung WD80T",
+        "description": "Стиральная машина Samsung с загрузкой 8 кг, сушкой и технологией EcoBubble для бережной стирки.",
+        "keywords": [
+            "Samsung",
+            "стиральная машина",
+            "сушка",
+            "EcoBubble",
+            "умная"
+        ],
+        "price": 55990,
+        "active": true
+    },
+    {
+        "id": 13,
+        "iblock_id": 2,
+        "section_id": 9,
+        "code": "kak-vybrat-smartfon",
+        "name": "Как выбрать смартфон в 2026 году",
+        "description": "Подробное руководство по выбору смартфона: процессор, камера, экран, аккумулятор. Советы для разных бюджетов и задач.",
+        "keywords": [
+            "выбор",
+            "смартфон",
+            "советы",
+            "гид",
+            "покупка"
+        ],
+        "active": true,
+        "text": "<h2>Как выбрать смартфон</h2><p>Выбирая смартфон, обратите внимание на экран и камеру. Флагманы вроде iPhone 15 Pro и Samsung Galaxy S24 Ultra предлагают лучшие камеры.</p><p>Если вам нужен ноутбук для работы, посмотрите наш гид. Для защиты телефона купите чехол-книжка для iPhone 15 Pro.</p><p>При поломке пригодится ремонт смартфонов в нашем сервисе.</p>"
+    },
+    {
+        "id": 14,
+        "iblock_id": 2,
+        "section_id": 9,
+        "code": "kak-vybrat-noutbuk",
+        "name": "Как выбрать ноутбук для работы и игр",
+        "description": "Рекомендации по выбору ноутбука: характеристики, бренды, бюджет. Разбираем отличия игровых и рабочих моделей.",
+        "keywords": [
+            "выбор",
+            "ноутбук",
+            "советы",
+            "гид",
+            "покупка"
+        ],
+        "active": true,
+        "text": "<h2>Ноутбук для работы и игр</h2><p>Для офиса подойдёт Lenovo ThinkPad X1 Carbon, а для игр — ASUS ROG Zephyrus G14. MacBook Pro 16 M3 Max хорош для видео.</p><p>Если ноутбук сломался, закажите ремонт ноутбуков у нас. Мы также делаем доставку по городу.</p>"
+    },
+    {
+        "id": 15,
+        "iblock_id": 2,
+        "section_id": 8,
+        "code": "obzor-iphone-15-pro",
+        "name": "Обзор iPhone 15 Pro: стоит ли обновляться?",
+        "description": "Полный обзор флагманского смартфона Apple iPhone 15 Pro. Сравнение с предыдущими моделями и конкурентами.",
+        "keywords": [
+            "обзор",
+            "iPhone",
+            "Apple",
+            "смартфон",
+            "флагман"
+        ],
+        "active": true,
+        "text": "<h2>Обзор iPhone 15 Pro</h2><p>iPhone 15 Pro получил титановый корпус и USB-C. Многие сравнивают его с Samsung Galaxy S24 Ultra.</p><p>В комплекте нет защиты, поэтому берите чехол для iPhone 15 Pro и наушники AirPods Pro 2.</p>"
+    },
+    {
+        "id": 16,
+        "iblock_id": 2,
+        "section_id": 8,
+        "code": "obzor-samsung-galaxy-s24",
+        "name": "Обзор Samsung Galaxy S24 Ultra: новый уровень AI",
+        "description": "Обзор флагмана Samsung с функциями искусственного интеллекта, улучшенной камерой и стилусом S-Pen.",
+        "keywords": [
+            "обзор",
+            "Samsung",
+            "Galaxy S24",
+            "смартфон",
+            "AI"
+        ],
+        "active": true,
+        "text": "<h2>Обзор Samsung Galaxy S24 Ultra</h2><p>Главная новинка — функции AI и стилус S-Pen. Конкурент — iPhone 15 Pro от Apple.</p><p>Телефон отлично подходит тем, кто выбирает смартфон для работы.</p>"
+    },
+    {
+        "id": 17,
+        "iblock_id": 2,
+        "section_id": 10,
+        "code": "noviy-magazin",
+        "name": "Открытие нового магазина в ТЦ \"Мега\"",
+        "description": "Сообщаем об открытии нового фирменного магазина в торговом центре \"Мега\". Большой выбор электроники и аксессуаров.",
+        "keywords": [
+            "новость",
+            "открытие",
+            "магазин",
+            "Мега"
+        ],
+        "active": true,
+        "text": "<p>В ТЦ Мега открылся новый магазин электроники. Здесь можно купить смартфоны, ноутбуки и бытовую технику: холодильник LG InstaView и стиральную машину Samsung.</p><p>Работает бесплатная доставка по городу.</p>"
+    },
+    {
+        "id": 18,
+        "iblock_id": 2,
+        "section_id": 10,
+        "code": "skidki-noyabr",
+        "name": "Чёрная пятница: скидки до 50%",
+        "description": "Грандиозная распродажа в честь Чёрной пятницы. Скидки на смартфоны, ноутбуки, бытовую технику и аксессуары.",
+        "keywords": [
+            "новость",
+            "скидки",
+            "распродажа",
+            "чёрная пятница",
+            "акция"
+        ],
+        "active": true,
+        "text": "<p>В чёрную пятницу скидки до 50% на смартфоны и ноутбуки. Холодильники Samsung Bespoke и стиральные машины LG тоже участвуют в акции.</p><p>Закажите сборку мебели со скидкой.</p>"
+    },
+    {
+        "id": 19,
+        "iblock_id": 3,
+        "section_id": 11,
+        "code": "remont-smartfonov",
+        "name": "Ремонт смартфонов",
+        "description": "Профессиональный ремонт смартфонов всех брендов: замена экрана, аккумулятора, разъёмов. Гарантия на работы.",
+        "keywords": [
+            "ремонт",
+            "смартфон",
+            "сервис",
+            "замена экрана",
+            "диагностика"
+        ],
+        "price": 1500,
+        "active": true
+    },
+    {
+        "id": 20,
+        "iblock_id": 3,
+        "section_id": 11,
+        "code": "remont-noutbukov",
+        "name": "Ремонт ноутбуков",
+        "description": "Ремонт ноутбуков любой сложности: замена матрицы, клавиатуры, термопасты, чистка от пыли. Выезд мастера.",
+        "keywords": [
+            "ремонт",
+            "ноутбук",
+            "сервис",
+            "чистка",
+            "апгрейд"
+        ],
+        "price": 2000,
+        "active": true
+    },
+    {
+        "id": 21,
+        "iblock_id": 3,
+        "section_id": 12,
+        "code": "dostavka-po-gorodu",
+        "name": "Доставка по городу",
+        "description": "Быстрая доставка по городу в день заказа. Подъём на этаж, распаковка и проверка товара на месте.",
+        "keywords": [
+            "доставка",
+            "курьер",
+            "город",
+            "быстро"
+        ],
+        "price": 500,
+        "active": true
+    },
+    {
+        "id": 22,
+        "iblock_id": 3,
+        "section_id": 12,
+        "code": "sborka-mebeli",
+        "name": "Сборка мебели",
+        "description": "Профессиональная сборка мебели любой сложности. Опытные мастера, выезд на дом, гарантия на работы.",
+        "keywords": [
+            "сборка",
+            "мебель",
+            "мастер",
+            "выезд"
+        ],
+        "price": 3000,
+        "active": true
+    }
+]

@@ -1,0 +1,498 @@
+        /* Стили, имитирующие админку Битрикс */
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Helvetica Neue', Arial, sans-serif;
+            background: #f5f5f5;
+            color: #333;
+            font-size: 13px;
+        }
+
+        /* Шапка */
+        .bx-top-panel {
+            background: #2c3e50;
+            color: #fff;
+            padding: 10px 20px;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            font-size: 14px;
+        }
+        .bx-top-panel .logo { font-weight: bold; font-size: 16px; }
+        .bx-top-panel .breadcrumbs { color: #95a5a6; }
+        .bx-top-panel .breadcrumbs span { margin: 0 4px; }
+
+        /* Меню */
+        .bx-menu {
+            background: #34495e;
+            display: flex;
+            padding: 0 20px;
+            gap: 0;
+        }
+        .bx-menu a {
+            color: #bdc3c7;
+            text-decoration: none;
+            padding: 10px 16px;
+            font-size: 13px;
+            border-bottom: 2px solid transparent;
+            transition: all 0.2s;
+        }
+        .bx-menu a:hover { color: #fff; background: rgba(255,255,255,0.05); }
+        .bx-menu a.active {
+            color: #fff;
+            border-bottom-color: #3498db;
+            background: rgba(255,255,255,0.08);
+        }
+
+        /* Контент */
+        .bx-content {
+            padding: 20px;
+            max-width: 1400px;
+            margin: 0 auto;
+        }
+
+        .bx-page-title {
+            font-size: 22px;
+            font-weight: 600;
+            margin-bottom: 16px;
+            color: #2c3e50;
+        }
+
+        /* Фильтр (CAdminFilter) */
+        .bx-filter {
+            background: #fff;
+            border: 1px solid #dce1e6;
+            border-radius: 4px;
+            margin-bottom: 16px;
+            box-shadow: 0 1px 2px rgba(0,0,0,0.04);
+        }
+        .bx-filter-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 10px 14px;
+            cursor: pointer;
+            background: #f8f9fa;
+            border-bottom: 1px solid #e9ecef;
+            user-select: none;
+        }
+        .bx-filter-header:hover { background: #f0f1f2; }
+        .bx-filter-body {
+            padding: 14px;
+            display: none;
+        }
+        .bx-filter-body.open { display: block; }
+        .bx-filter-row {
+            display: flex;
+            gap: 16px;
+            flex-wrap: wrap;
+            align-items: end;
+        }
+        .bx-filter-field {
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+        }
+        .bx-filter-field label {
+            font-size: 11px;
+            color: #666;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+        .bx-filter-field select,
+        .bx-filter-field input {
+            padding: 6px 10px;
+            border: 1px solid #c0c7cf;
+            border-radius: 3px;
+            font-size: 13px;
+            min-width: 160px;
+            background: #fff;
+        }
+        .bx-filter-field select:focus,
+        .bx-filter-field input:focus {
+            border-color: #3498db;
+            outline: none;
+            box-shadow: 0 0 0 2px rgba(52,152,219,0.15);
+        }
+        .bx-filter-buttons {
+            display: flex;
+            gap: 8px;
+            margin-top: 12px;
+            padding-top: 12px;
+            border-top: 1px solid #e9ecef;
+        }
+
+        /* Кнопки */
+        .bx-btn {
+            padding: 6px 16px;
+            border: 1px solid #c0c7cf;
+            border-radius: 3px;
+            font-size: 13px;
+            cursor: pointer;
+            background: #fff;
+            color: #333;
+            transition: all 0.15s;
+            text-decoration: none;
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+        }
+        .bx-btn:hover { background: #f0f1f2; border-color: #a0aab5; }
+        .bx-btn-primary {
+            background: #1f7bc5;
+            border-color: #1f7bc5;
+            color: #fff;
+        }
+        .bx-btn-primary:hover { background: #1a6fb3; border-color: #1a6fb3; }
+        .bx-btn-danger {
+            background: #e74c3c;
+            border-color: #e74c3c;
+            color: #fff;
+        }
+        .bx-btn-danger:hover { background: #c0392b; }
+        .bx-btn-success {
+            background: #27ae60;
+            border-color: #27ae60;
+            color: #fff;
+        }
+        .bx-btn-success:hover { background: #219a52; }
+        .bx-btn-sm { padding: 4px 10px; font-size: 12px; }
+
+        /* Таблица (CAdminList) */
+        .bx-table-wrap {
+            background: #fff;
+            border: 1px solid #dce1e6;
+            border-radius: 4px;
+            overflow: hidden;
+            box-shadow: 0 1px 2px rgba(0,0,0,0.04);
+        }
+        .bx-table-toolbar {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 10px 14px;
+            background: #f8f9fa;
+            border-bottom: 1px solid #e9ecef;
+        }
+        .bx-table-toolbar .left { display: flex; gap: 8px; align-items: center; }
+        .bx-table-toolbar .right { display: flex; gap: 8px; }
+        .bx-table-toolbar select { padding: 4px 8px; border: 1px solid #c0c7cf; border-radius: 3px; }
+
+        table.bx-table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+        table.bx-table th {
+            background: #f8f9fa;
+            padding: 8px 10px;
+            font-size: 12px;
+            color: #555;
+            text-align: left;
+            border-bottom: 2px solid #dee2e6;
+            white-space: nowrap;
+            user-select: none;
+            cursor: pointer;
+        }
+        table.bx-table th:hover { background: #f0f1f2; }
+        table.bx-table th .sort-arrow { color: #3498db; margin-left: 4px; }
+        table.bx-table td {
+            padding: 8px 10px;
+            border-bottom: 1px solid #e9ecef;
+            font-size: 13px;
+            vertical-align: middle;
+        }
+        table.bx-table tr:hover td { background: #f0f7ff; }
+        table.bx-table tr.bx-row-selected td { background: #e8f4fd; }
+        table.bx-table td.actions { white-space: nowrap; }
+        table.bx-table td .entity-type {
+            display: inline-block;
+            padding: 1px 6px;
+            border-radius: 3px;
+            font-size: 10px;
+            font-weight: 600;
+            text-transform: uppercase;
+            margin-right: 6px;
+        }
+        .type-elem { background: #d4edda; color: #155724; }
+        .type-sect { background: #cce5ff; color: #004085; }
+
+        /* Badge стратегий */
+        .badge {
+            display: inline-block;
+            padding: 2px 8px;
+            border-radius: 10px;
+            font-size: 11px;
+            font-weight: 600;
+        }
+        .badge-keyword { background: #d4edda; color: #155724; }
+        .badge-tfidf { background: #d1ecf1; color: #0c5460; }
+        .badge-embedding { background: #cce5ff; color: #004085; }
+        .badge-llm { background: #e8daef; color: #6c3483; }
+        .badge-manual { background: #fdebd0; color: #935e38; }
+        .badge-related { background: #d5f5e3; color: #1e8449; }
+        .badge-accessory { background: #d6eaf8; color: #21618c; }
+        .badge-strong { background: #a9dfbf; color: #1e8449; }
+        .badge-medium { background: #f9e79f; color: #9a7d0a; }
+        .badge-weak { background: #f5b7b1; color: #922b21; }
+        .badge-section { background: #d2b4de; color: #6c3483; }
+
+        /* Активность */
+        .active-yes { color: #27ae60; font-weight: bold; }
+        .active-no { color: #e74c3c; }
+        .icon-link { text-decoration: none; cursor: pointer; }
+        .icon-link:hover { opacity: 0.7; }
+
+        /* Пагинация */
+        .bx-pagination {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 10px 14px;
+            background: #f8f9fa;
+            border-top: 1px solid #e9ecef;
+        }
+        .bx-pagination .pages { display: flex; gap: 4px; }
+        .bx-pagination .pages a, .bx-pagination .pages span {
+            padding: 4px 10px;
+            border: 1px solid #dce1e6;
+            border-radius: 3px;
+            text-decoration: none;
+            color: #333;
+            font-size: 12px;
+        }
+        .bx-pagination .pages a:hover { background: #e9ecef; }
+        .bx-pagination .pages .current {
+            background: #1f7bc5;
+            color: #fff;
+            border-color: #1f7bc5;
+        }
+        .bx-pagination .info { color: #666; font-size: 12px; }
+
+        /* Модалка */
+        .modal-overlay {
+            display: none;
+            position: fixed;
+            top: 0; left: 0; right: 0; bottom: 0;
+            background: rgba(0,0,0,0.5);
+            z-index: 1000;
+            justify-content: center;
+            align-items: center;
+        }
+        .modal-overlay.open { display: flex; }
+        .modal {
+            background: #fff;
+            border-radius: 6px;
+            width: 560px;
+            max-width: 95vw;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.2);
+        }
+        .modal-header {
+            padding: 14px 18px;
+            border-bottom: 1px solid #e9ecef;
+            font-size: 16px;
+            font-weight: 600;
+        }
+        .modal-body { padding: 18px; }
+        .modal-footer {
+            padding: 12px 18px;
+            border-top: 1px solid #e9ecef;
+            display: flex;
+            justify-content: flex-end;
+            gap: 8px;
+        }
+        .modal .field-group {
+            margin-bottom: 14px;
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+        }
+        .modal .field-group label {
+            font-size: 12px;
+            color: #555;
+            font-weight: 600;
+        }
+        .modal .field-group select,
+        .modal .field-group input {
+            padding: 7px 10px;
+            border: 1px solid #c0c7cf;
+            border-radius: 3px;
+            font-size: 13px;
+        }
+        .modal .field-row {
+            display: flex;
+            gap: 8px;
+        }
+        .modal .field-row input { flex: 1; }
+        .modal .search-result {
+            margin-top: 4px;
+            padding: 6px 10px;
+            background: #e8f4fd;
+            border-radius: 3px;
+            font-size: 12px;
+            color: #1f7bc5;
+        }
+
+        /* Уведомления */
+        .bx-notification {
+            padding: 10px 14px;
+            border-radius: 4px;
+            margin-bottom: 16px;
+            font-size: 13px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        .bx-notification-success { background: #d4edda; border: 1px solid #c3e6cb; color: #155724; }
+        .bx-notification-info { background: #d1ecf1; border: 1px solid #bee5eb; color: #0c5460; }
+        .bx-notification-warning { background: #fff3cd; border: 1px solid #ffeaa7; color: #856404; }
+        .bx-notification-error { background: #f8d7da; border: 1px solid #f5c6cb; color: #721c24; }
+
+        /* Статистика */
+        .bx-stats {
+            display: flex;
+            gap: 16px;
+            margin-bottom: 16px;
+        }
+        .bx-stat-card {
+            background: #fff;
+            border: 1px solid #dce1e6;
+            border-radius: 4px;
+            padding: 14px 18px;
+            flex: 1;
+            box-shadow: 0 1px 2px rgba(0,0,0,0.04);
+        }
+        .bx-stat-card .value { font-size: 24px; font-weight: 700; color: #2c3e50; }
+        .bx-stat-card .label { font-size: 11px; color: #888; text-transform: uppercase; margin-top: 4px; }
+
+        /* Вкладки настроек */
+        .bx-tabs {
+            display: flex;
+            border-bottom: 2px solid #dee2e6;
+            margin-bottom: 20px;
+            gap: 0;
+        }
+        .bx-tabs a {
+            padding: 10px 20px;
+            text-decoration: none;
+            color: #666;
+            font-size: 13px;
+            border-bottom: 2px solid transparent;
+            margin-bottom: -2px;
+            transition: all 0.2s;
+        }
+        .bx-tabs a:hover { color: #333; }
+        .bx-tabs a.active {
+            color: #1f7bc5;
+            border-bottom-color: #1f7bc5;
+            font-weight: 600;
+        }
+
+        .bx-settings-section {
+            background: #fff;
+            border: 1px solid #dce1e6;
+            border-radius: 4px;
+            padding: 20px;
+            margin-bottom: 16px;
+        }
+        .bx-settings-section h3 {
+            font-size: 15px;
+            margin-bottom: 14px;
+            color: #2c3e50;
+            padding-bottom: 8px;
+            border-bottom: 1px solid #e9ecef;
+        }
+        .bx-settings-row {
+            display: flex;
+            align-items: center;
+            padding: 8px 0;
+            gap: 12px;
+        }
+        .bx-settings-row label {
+            min-width: 200px;
+            font-size: 13px;
+            color: #333;
+        }
+        .bx-settings-row input[type="checkbox"] { width: 16px; height: 16px; }
+        .bx-settings-row select,
+        .bx-settings-row input[type="text"],
+        .bx-settings-row input[type="password"],
+        .bx-settings-row input[type="number"] {
+            padding: 6px 10px;
+            border: 1px solid #c0c7cf;
+            border-radius: 3px;
+            font-size: 13px;
+            min-width: 300px;
+        }
+        .bx-settings-row input[type="number"] { min-width: 80px; }
+        .bx-settings-row .hint {
+            font-size: 11px;
+            color: #888;
+            margin-left: 8px;
+        }
+
+        /* Weight sliders */
+        .weight-row {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 6px 0;
+        }
+        .weight-row .name { min-width: 140px; font-size: 13px; }
+        .weight-row input[type="range"] { flex: 1; max-width: 200px; }
+        .weight-row .value { font-weight: 600; min-width: 40px; }
+        .weight-row .total { color: #888; font-size: 12px; }
+
+        /* Select All */
+        .select-all { width: 16px; height: 16px; cursor: pointer; }
+
+        /* Прогресс-бар и лог */
+        .progress-container {
+            background: #fff;
+            border: 1px solid #dce1e6;
+            border-radius: 4px;
+            padding: 16px 18px;
+            margin-bottom: 16px;
+            box-shadow: 0 1px 2px rgba(0,0,0,0.04);
+            display: none;
+        }
+        .progress-container.active { display: block; }
+        .progress-bar-outer {
+            background: #ecf0f1;
+            height: 24px;
+            border-radius: 12px;
+            overflow: hidden;
+            margin-bottom: 8px;
+        }
+        .progress-bar-inner {
+            height: 100%;
+            background: linear-gradient(90deg, #3498db, #27ae60);
+            border-radius: 12px;
+            transition: width 0.4s ease;
+            width: 0%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 11px;
+            color: #fff;
+            font-weight: 600;
+        }
+        .progress-status {
+            font-size: 12px;
+            color: #666;
+            margin-bottom: 8px;
+        }
+        .progress-log {
+            background: #1e1e1e;
+            color: #d4d4d4;
+            font-family: 'Consolas', 'Courier New', monospace;
+            font-size: 12px;
+            padding: 10px 12px;
+            border-radius: 4px;
+            max-height: 200px;
+            overflow-y: auto;
+            line-height: 1.6;
+        }
+        .progress-log .log-info { color: #6bc6ff; }
+        .progress-log .log-success { color: #5cb85c; }
+        .progress-log .log-warning { color: #f0ad4e; }
+        .progress-log .log-error { color: #d9534f; }
+        .progress-log .log-embedding { color: #ab7ac4; }

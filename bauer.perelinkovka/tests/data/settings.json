@@ -1,0 +1,32 @@
+{
+    "module_enabled": true,
+    "iblock_ids": [
+        2
+    ],
+    "max_links_per_entity": 10,
+    "min_score": 0.3,
+    "ai_provider": "openrouter",
+    "base_url": "https:\/\/openrouter.ai\/api\/v1",
+    "api_key": "",
+    "llm_model": "deepseek-chat",
+    "embedding_model": "text-embedding-3-small",
+    "strategy_weights": {
+        "keyword": 0.15,
+        "tfidf": 0.25,
+        "embedding": 0.35,
+        "llm": 0.25
+    },
+    "strategy_enabled": {
+        "keyword": false,
+        "tfidf": false,
+        "embedding": false,
+        "llm": false
+    },
+    "agent_enabled": false,
+    "agent_interval": "6h",
+    "agent_batch_size": 50,
+    "agent_strategies": [
+        "keyword",
+        "tfidf"
+    ]
+}

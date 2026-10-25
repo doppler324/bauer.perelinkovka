@@ -1,0 +1,124 @@
+<?php
+
+namespace Bauer\Perelinkovka;
+
+use Bauer\Perelinkovka\Store\JsonFileStore;
+use Bauer\Perelinkovka\Store\OptionStore;
+use Bauer\Perelinkovka\Store\StoreInterface;
+
+/**
+ * Окружение админки: откуда брать данные и где хранить настройки.
+ * Вкладки админки одинаковы в тестовой админке (JSON) и в Битриксе, различается только окружение:
+ * Env::forJson($dir) или Env::forBitrix().
+ */
+class Env
+{
+    private static ?DataProviderInterface $provider = null;
+    private static ?StoreInterface $store = null;
+    private static string $mode = 'json';
+    private static string $dataDir = '';
+    private static string $assetUrl = '';
+    private static string $apiUrl = 'progress_api.php';
+    private static array $anchorOptionsCache = [];
+
+    public static function forJson(string $dataDir, string $assetUrl = '', string $apiUrl = 'progress_api.php'): void
+    {
+        self::$mode = 'json';
+        self::$dataDir = rtrim($dataDir, '/\\');
+        self::$provider = new JsonDataProvider(self::$dataDir);
+        self::$store = new JsonFileStore(self::$dataDir);
+        self::$assetUrl = $assetUrl;
+        self::$apiUrl = $apiUrl;
+    }
+
+    public static function forBitrix(string $assetUrl, string $apiUrl): void
+    {
+        self::$mode = 'bitrix';
+        self::$provider = new BitrixDataProvider();
+        self::$store = new OptionStore();
+        self::$assetUrl = rtrim($assetUrl, '/') . '/';
+        self::$apiUrl = $apiUrl;
+    }
+
+    public static function isBitrix(): bool
+    {
+        return self::$mode === 'bitrix';
+    }
+
+    public static function provider(): DataProviderInterface
+    {
+        return self::$provider;
+    }
+
+    public static function store(): StoreInterface
+    {
+        return self::$store;
+    }
+
+    /** Хранилище текстов статей с расставленными ссылками (каждый раз заново прочитанное). */
+    public static function anchorStore(): AnchorStoreInterface
+    {
+        return self::$mode === 'bitrix' ? new BitrixAnchorStore() : new AnchorStore(self::$dataDir . '/anchors.json');
+    }
+
+    public static function synonyms(): SynonymProvider
+    {
+        return new SynonymProvider(self::$store);
+    }
+
+    /** Настройки расстановки анкоров (поверх AnchorEngine::DEFAULTS). */
+    public static function anchorOptions(): array
+    {
+        $saved = self::$store->read('anchor_settings');
+        return array_replace(AnchorEngine::DEFAULTS, is_array($saved) ? $saved : []);
+    }
+
+    public static function saveAnchorOptions(array $options): bool
+    {
+        return self::$store->write('anchor_settings', $options);
+    }
+
+    public static function assetUrl(string $file): string
+    {
+        return self::$assetUrl . $file;
+    }
+
+    public static function apiUrl(): string
+    {
+        return self::$apiUrl;
+    }
+
+    /**
+     * Цели ссылок в текстах: активные элементы и разделы инфоблоков из настроек анкоров
+     * (target_iblock_ids; пусто — все инфоблоки).
+     */
+    public static function anchorTargets(?array $options = null): array
+    {
+        $o = $options ?? self::anchorOptions();
+        $ids = array_map('intval', (array)($o['target_iblock_ids'] ?? []));
+        $targets = [];
+        if (!empty($o['target_elements'])) {
+            foreach (self::$provider->getElements(['active' => true] + ($ids ? ['iblock_id' => $ids] : [])) as $el) {
+                $targets[] = $el + ['type' => 'element'];
+            }
+        }
+        if (!empty($o['target_sections'])) {
+            foreach (self::$provider->getSections($ids ? ['iblock_id' => $ids] : []) as $sec) {
+                $targets[] = $sec + ['type' => 'section'];
+            }
+        }
+        return $targets;
+    }
+
+    /** Движок анкоров со всеми нужными данными. */
+    public static function anchorEngine(array $override = [], bool $cached = false): AnchorEngine
+    {
+        $class = $cached ? CachedAnchorEngine::class : AnchorEngine::class;
+        return new $class(
+            self::synonyms(),
+            array_replace(self::anchorOptions(), $override),
+            self::$provider->getIBlocks(),
+            self::$provider->getSections()
+        );
+    }
+}

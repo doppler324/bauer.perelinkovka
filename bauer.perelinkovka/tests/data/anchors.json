@@ -1,0 +1,148 @@
+{
+    "13": {
+        "text_hash": "0607330cfd9328e1e186454516e28b92",
+        "updated_at": "2026-10-11T18:20:16+00:00",
+        "placements": [
+            {
+                "target_type": "element",
+                "target_id": 2,
+                "target_name": "Samsung Galaxy S24 Ultra",
+                "href": "\/catalog\/samsung-galaxy-s24\/",
+                "anchor_text": "Samsung Galaxy S24 Ultra",
+                "phrase": "Samsung Galaxy S24 Ultra",
+                "phrase_stems": "samsung galaxy s24 ultra",
+                "occurrence": 0,
+                "type": "exact",
+                "quality": 1,
+                "score": 0.668,
+                "status": "active"
+            },
+            {
+                "target_type": "element",
+                "target_id": 19,
+                "target_name": "Ремонт смартфонов",
+                "href": "\/services\/remont-smartfonov\/",
+                "anchor_text": "ремонт мобильников",
+                "phrase": "Ремонт мобильник",
+                "phrase_stems": "ремонт мобильник",
+                "occurrence": 0,
+                "type": "synonym",
+                "quality": 0.85,
+                "score": 0.567,
+                "status": "active"
+            }
+        ]
+    },
+    "14": {
+        "text_hash": "e0d9744bf3e4aa5f29003c9354e2eb65",
+        "updated_at": "2026-10-11T18:20:16+00:00",
+        "placements": [
+            {
+                "target_type": "element",
+                "target_id": 5,
+                "target_name": "Lenovo ThinkPad X1 Carbon Gen 11",
+                "href": "\/catalog\/lenovo-thinkpad-x1\/",
+                "anchor_text": "Lenovo ThinkPad X1 Carbon Gen 11",
+                "phrase": "Lenovo ThinkPad X1 Carbon Gen 11",
+                "phrase_stems": "lenovo thinkpad x1 carbon gen 11",
+                "occurrence": 0,
+                "type": "exact",
+                "quality": 1,
+                "score": 0.676,
+                "status": "active"
+            },
+            {
+                "target_type": "element",
+                "target_id": 6,
+                "target_name": "ASUS ROG Zephyrus G14",
+                "href": "\/catalog\/asus-rog-zephyrus\/",
+                "anchor_text": "ASUS ROG Zephyrus G14",
+                "phrase": "ASUS ROG Zephyrus G14",
+                "phrase_stems": "asus rog zephyrus g14",
+                "occurrence": 0,
+                "type": "exact",
+                "quality": 1,
+                "score": 0.673,
+                "status": "active"
+            },
+            {
+                "target_type": "element",
+                "target_id": 20,
+                "target_name": "Ремонт ноутбуков",
+                "href": "\/services\/remont-noutbukov\/",
+                "anchor_text": "ремонт лэптопов",
+                "phrase": "Ремонт лэптоп",
+                "phrase_stems": "ремонт лэптоп",
+                "occurrence": 0,
+                "type": "synonym",
+                "quality": 0.85,
+                "score": 0.573,
+                "status": "active"
+            }
+        ]
+    },
+    "15": {
+        "text_hash": "e879a26d8f576ca74ff7cdd8a71670e9",
+        "updated_at": "2026-10-11T18:20:16+00:00",
+        "placements": [
+            {
+                "target_type": "element",
+                "target_id": 8,
+                "target_name": "Чехол-книжка для iPhone 15 Pro",
+                "href": "\/catalog\/chekhol-iphone-15\/",
+                "anchor_text": "чехол-книжка для iPhone 15 Pro",
+                "phrase": "Чехол книжка для iPhone 15 Pro",
+                "phrase_stems": "чехол книжк для iphone 15 pro",
+                "occurrence": 0,
+                "type": "exact",
+                "quality": 1,
+                "score": 0.905,
+                "status": "active"
+            },
+            {
+                "target_type": "element",
+                "target_id": 2,
+                "target_name": "Samsung Galaxy S24 Ultra",
+                "href": "\/catalog\/samsung-galaxy-s24\/",
+                "anchor_text": "Samsung Galaxy S24 Ultra",
+                "phrase": "Samsung Galaxy S24 Ultra",
+                "phrase_stems": "samsung galaxy s24 ultra",
+                "occurrence": 0,
+                "type": "exact",
+                "quality": 1,
+                "score": 0.709,
+                "status": "active"
+            }
+        ]
+    },
+    "16": {
+        "text_hash": "1b864152313296fdffada9b434256a8a",
+        "updated_at": "2026-10-11T18:20:16+00:00",
+        "placements": [
+            {
+                "target_type": "element",
+                "target_id": 2,
+                "target_name": "Samsung Galaxy S24 Ultra",
+                "href": "\/catalog\/samsung-galaxy-s24\/",
+                "anchor_text": "S-Pen",
+                "phrase": "S-Pen",
+                "phrase_stems": "s pen",
+                "occurrence": 0,
+                "type": "keyword",
+                "quality": 0.9,
+                "score": 0.94,
+                "status": "active"
+            }
+        ]
+    },
+    "17": {
+        "text_hash": "dce4b8654742fbdc1c43b9e918caa330",
+        "updated_at": "2026-10-11T18:20:16+00:00",
+        "placements": []
+    },
+    "18": {
+        "text_hash": "08e08f8d45defdcd12e328554c15cc7a",
+        "updated_at": "2026-10-11T18:20:16+00:00",
+        "placements": []
+    }
+}
