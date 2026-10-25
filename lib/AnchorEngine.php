@@ -24,6 +24,8 @@ class AnchorEngine
         'min_word_len'      => 4,
         'max_links_per_article' => 0, // 0 — без ограничения
         'one_link_per_block' => true,
+        'skip_first_block'  => false, // не ставить ссылку в первом абзаце
+        'words_per_link'    => 0,     // не чаще одной ссылки на N слов текста (0 — без ограничения)
         'target_elements'   => true,
         'target_sections'   => true,
         'skip_tags'         => ['h1', 'h2', 'h3', 'h4', 'h5', 'h6', 'a', 'code', 'pre', 'script', 'style'],
@@ -145,6 +147,15 @@ class AnchorEngine
 
         $matches = [];
         $limit = (int)$this->opt['max_links_per_article'];
+        $perWords = (int)$this->opt['words_per_link'];
+        if ($perWords > 0) {
+            $words = count(TextProcessor::words(strip_tags($html)));
+            $byDensity = max(1, intdiv($words, $perWords));
+            $limit = $limit > 0 ? min($limit, $byDensity) : $byDensity;
+        }
+        if ($this->opt['skip_first_block'] && $textNodes) {
+            $usedBlocks[$textNodes[0]['block']] = true;
+        }
         foreach ($targets as $target) {
             if ($limit > 0 && count($matches) >= $limit) {
                 break;

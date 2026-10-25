@@ -339,5 +339,21 @@
         "block_code": "",
         "strategy": "auto",
         "score": 0.5
+    },
+    {
+        "source_type": "element",
+        "source_id": 1,
+        "target_type": "element",
+        "target_id": 3,
+        "source_iblock_id": 1,
+        "target_iblock_id": 1,
+        "type": "related",
+        "sort": 100,
+        "active": true,
+        "id": 32,
+        "created_at": "2026-10-25T16:40:24+00:00",
+        "block_code": "",
+        "strategy": "auto",
+        "score": 0.5
     }
 ]

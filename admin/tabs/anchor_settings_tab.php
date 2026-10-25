@@ -20,6 +20,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['save_anchor_settings'
         'min_word_len'          => max(1, min(10, (int)($_POST['min_word_len'] ?? 4))),
         'max_links_per_article' => max(0, (int)($_POST['max_links_per_article'] ?? 0)),
         'one_link_per_block'    => !empty($_POST['one_link_per_block']),
+        'skip_first_block'      => !empty($_POST['skip_first_block']),
+        'words_per_link'        => max(0, (int)($_POST['words_per_link'] ?? 0)),
         'target_elements'       => !empty($_POST['target_elements']),
         'target_sections'       => !empty($_POST['target_sections']),
         'target_iblock_ids'     => array_values(array_map('intval', (array)($_POST['target_iblock_ids'] ?? []))),
@@ -61,6 +63,9 @@ $chk = fn($k) => !empty($anchorSettings[$k]) ? 'checked' : '';
         <div class="bx-settings-row"><label>Одна ссылка на абзац</label><input type="checkbox" name="one_link_per_block" value="1" <?= $chk('one_link_per_block') ?>></div>
         <div class="bx-settings-row"><label>Макс. ссылок на статью</label><input type="number" name="max_links_per_article" min="0" value="<?= (int)$anchorSettings['max_links_per_article'] ?>">
             <span class="hint">0 — без ограничения; одна ссылка на каждую цель действует всегда</span></div>
+        <div class="bx-settings-row"><label>Не ставить ссылку в первом абзаце</label><input type="checkbox" name="skip_first_block" value="1" <?= $chk('skip_first_block') ?>></div>
+        <div class="bx-settings-row"><label>Не чаще одной ссылки на N слов</label><input type="number" name="words_per_link" min="0" value="<?= (int)($anchorSettings['words_per_link'] ?? 0) ?>">
+            <span class="hint">0 — без ограничения; например, 150 — не больше одной ссылки на 150 слов текста</span></div>
         <div class="bx-settings-row"><label>Не ставить ссылки внутри тегов</label><input type="text" name="skip_tags" value="<?= $h(implode(', ', $anchorSettings['skip_tags'])) ?>">
             <span class="hint">тег a пропускается всегда</span></div>
     </div>
