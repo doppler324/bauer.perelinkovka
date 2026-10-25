@@ -83,9 +83,9 @@ $h = fn($s) => htmlspecialchars((string)$s, ENT_QUOTES, 'UTF-8');
     <div class="bx-notification bx-notification-warning">Нет статей: в инфоблоках нет элементов с текстом (детальное описание).</div>
 <?php else: ?>
 <?php
-// Разделы выбранного инфоблока с полным путём и числом статей
+// Разделы выбранного инфоблока с полным путём
 $secById = [];
-foreach ($dataProvider->getSections() as $sec) {
+foreach ($dataProvider->getSections(['iblock_id' => $articleIblockId]) as $sec) {
     $secById[(int)$sec['id']] = $sec;
 }
 $secPath = function (int $id) use ($secById): string {
@@ -106,147 +106,122 @@ foreach ($secCount as $sid => $cnt) {
     $secOptions[$sid] = ($sid ? $secPath($sid) : 'Без раздела');
 }
 asort($secOptions, SORT_NATURAL | SORT_FLAG_CASE);
-$articlesSorted = $articles;
-usort($articlesSorted, fn($x, $y) => [($secOptions[(int)($x['section_id'] ?? 0)] ?? ''), $x['name']] <=> [($secOptions[(int)($y['section_id'] ?? 0)] ?? ''), $y['name']]);
-$curIdx = array_search($articleId, array_column($articlesSorted, 'id'));
-$prevId = $curIdx > 0 ? $articlesSorted[$curIdx - 1]['id'] : 0;
-$nextId = ($curIdx !== false && $curIdx < count($articlesSorted) - 1) ? $articlesSorted[$curIdx + 1]['id'] : 0;
-$pickUrl = fn(int $id) => '?tab=anchors&article_iblock=' . $articleIblockId . '&article=' . $id;
+
+// Фильтр, сортировка и страницы списка статей
+$fSection = isset($_GET['section']) && $_GET['section'] !== '' ? (int)$_GET['section'] : null;
+$fSearch = trim((string)($_GET['search'] ?? ''));
+$perPageOptions = [10, 20, 50, 100, 200];
+$perPage = (int)($_GET['per_page'] ?? 10);
+if (!in_array($perPage, $perPageOptions, true)) {
+    $perPage = 10;
+}
+$sortBy = in_array($_GET['sort'] ?? '', ['id', 'name'], true) ? $_GET['sort'] : 'id';
+$sortDir = ($_GET['dir'] ?? 'asc') === 'desc' ? 'desc' : 'asc';
+
+$list = array_values(array_filter($articles, function ($a) use ($fSection, $fSearch) {
+    if ($fSection !== null && (int)($a['section_id'] ?? 0) !== $fSection) {
+        return false;
+    }
+    return $fSearch === '' || mb_stripos('#' . $a['id'] . ' ' . $a['name'], $fSearch) !== false;
+}));
+usort($list, function ($x, $y) use ($sortBy, $sortDir) {
+    $r = $sortBy === 'name' ? strcasecmp((string)$x['name'], (string)$y['name']) : (int)$x['id'] <=> (int)$y['id'];
+    return $sortDir === 'desc' ? -$r : $r;
+});
+$total = count($list);
+$pages = max(1, (int)ceil($total / $perPage));
+if (isset($_GET['page'])) {
+    $page = (int)$_GET['page'];
+} else {
+    $idx = array_search($articleId, array_column($list, 'id'));
+    $page = $idx === false ? 1 : intdiv((int)$idx, $perPage) + 1;
+}
+$page = max(1, min($pages, $page));
+$pageItems = array_slice($list, ($page - 1) * $perPage, $perPage);
+
+$listParams = ['tab' => 'anchors', 'article_iblock' => $articleIblockId, 'section' => $fSection ?? '', 'search' => $fSearch,
+    'per_page' => $perPage, 'sort' => $sortBy, 'dir' => $sortDir];
+$url = fn(array $over = []) => '?' . http_build_query(array_merge($listParams, ['article' => $articleId, 'page' => $page], $over));
+$sortLink = fn(string $col) => $url(['sort' => $col, 'dir' => ($sortBy === $col && $sortDir === 'asc') ? 'desc' : 'asc', 'page' => 1]);
+$arrow = fn(string $col) => $sortBy === $col ? ($sortDir === 'asc' ? ' ▲' : ' ▼') : '';
+
+// страницы для навигации: первая, последняя и окно вокруг текущей
+$pageNums = array_values(array_unique(array_filter(array_merge([1, $pages], range(max(1, $page - 2), min($pages, $page + 2))))));
+sort($pageNums);
 ?>
-<div class="bx-filter art-picker" id="artPicker">
-    <form method="GET" class="art-picker__top">
-        <input type="hidden" name="tab" value="anchors">
-        <div class="bx-filter-field">
-            <label>Инфоблок статей</label>
-            <select name="article_iblock">
-                <?php foreach ($articleIblocks as $ib): ?>
-                    <option value="<?= (int)$ib['id'] ?>" <?= (int)$ib['id'] === $articleIblockId ? 'selected' : '' ?>><?= $h($ib['name']) ?></option>
-                <?php endforeach; ?>
-            </select>
-        </div>
-        <div class="bx-filter-field">
-            <label>Раздел</label>
-            <select id="artSection">
-                <option value="">Все разделы (<?= count($articles) ?>)</option>
-                <?php foreach ($secOptions as $sid => $name): ?>
-                    <option value="<?= (int)$sid ?>"><?= $h($name) ?> (<?= (int)$secCount[$sid] ?>)</option>
-                <?php endforeach; ?>
-            </select>
-        </div>
-        <div class="bx-filter-field art-picker__search">
-            <label>Поиск статьи</label>
-            <input type="search" id="artSearch" placeholder="Название или номер, например «смартфон» или 13" autocomplete="off">
-        </div>
-    </form>
-    <div class="art-picker__list" id="artList">
-        <?php $lastSec = null; foreach ($articlesSorted as $a):
-            $sid = (int)($a['section_id'] ?? 0);
-            if ($sid !== $lastSec): $lastSec = $sid; ?>
-                <div class="art-picker__group" data-section="<?= $sid ?>"><?= $h($secOptions[$sid] ?? 'Без раздела') ?></div>
-            <?php endif; ?>
-            <a class="art-picker__item <?= $a['id'] === $articleId ? 'is-current' : '' ?>" href="<?= $h($pickUrl((int)$a['id'])) ?>"
-               data-section="<?= $sid ?>" data-search="<?= $h(mb_strtolower('#' . $a['id'] . ' ' . $a['name'])) ?>">
-                <span class="art-picker__id">#<?= (int)$a['id'] ?></span> <?= $h($a['name']) ?>
-                <?php if ($anchorStore->get((int)$a['id'])): ?><span class="art-picker__done" title="Ссылки уже вставлены">✓</span><?php endif; ?>
-            </a>
-        <?php endforeach; ?>
-        <div class="art-picker__empty" id="artEmpty" hidden>Ничего не найдено</div>
+<form method="GET" class="bx-filter" id="artFilter">
+    <input type="hidden" name="tab" value="anchors">
+    <input type="hidden" name="article" value="<?= (int)$articleId ?>">
+    <input type="hidden" name="sort" value="<?= $h($sortBy) ?>"><input type="hidden" name="dir" value="<?= $h($sortDir) ?>">
+    <div class="bx-filter-field">
+        <label>Инфоблок статей</label>
+        <select name="article_iblock" onchange="this.form.elements.section.value='';this.form.elements.article.value='';this.form.submit()">
+            <?php foreach ($articleIblocks as $ib): ?>
+                <option value="<?= (int)$ib['id'] ?>" <?= (int)$ib['id'] === $articleIblockId ? 'selected' : '' ?>><?= $h($ib['name']) ?></option>
+            <?php endforeach; ?>
+        </select>
     </div>
-    <div class="art-picker__foot">
-        <span>Выбрано: <b>#<?= (int)$articleId ?> <?= $h($article['name'] ?? '') ?></b> <span id="artShown" class="art-picker__muted"></span></span>
-        <span>
-            <?php if ($prevId): ?><a class="bx-btn bx-btn-sm" href="<?= $h($pickUrl((int)$prevId)) ?>">← Предыдущая</a><?php endif; ?>
-            <?php if ($nextId): ?><a class="bx-btn bx-btn-sm" href="<?= $h($pickUrl((int)$nextId)) ?>">Следующая →</a><?php endif; ?>
-        </span>
+    <div class="bx-filter-field">
+        <label>Раздел</label>
+        <select name="section" onchange="this.form.submit()">
+            <option value="">Все разделы (<?= count($articles) ?>)</option>
+            <?php foreach ($secOptions as $sid => $name): ?>
+                <option value="<?= (int)$sid ?>" <?= $fSection === (int)$sid ? 'selected' : '' ?>><?= $h($name) ?> (<?= (int)$secCount[$sid] ?>)</option>
+            <?php endforeach; ?>
+        </select>
+    </div>
+    <div class="bx-filter-field" style="flex:1;min-width:220px;">
+        <label>Поиск статьи</label>
+        <input type="search" name="search" value="<?= $h($fSearch) ?>" placeholder="Название или номер" style="width:100%;box-sizing:border-box;">
+    </div>
+    <div class="bx-filter-field">
+        <label>На странице</label>
+        <select name="per_page" onchange="this.form.submit()">
+            <?php foreach ($perPageOptions as $n): ?><option value="<?= $n ?>" <?= $n === $perPage ? 'selected' : '' ?>><?= $n ?></option><?php endforeach; ?>
+        </select>
+    </div>
+    <div class="bx-filter-field"><label>&nbsp;</label><button type="submit" class="bx-btn bx-btn-primary">Найти</button></div>
+</form>
+
+<div class="bx-table-wrap" id="artList" style="margin-bottom:16px;">
+    <table class="bx-table">
+        <thead><tr>
+            <th style="width:70px;"><a href="<?= $h($sortLink('id')) ?>">ID<?= $arrow('id') ?></a></th>
+            <th><a href="<?= $h($sortLink('name')) ?>">Название<?= $arrow('name') ?></a></th>
+            <th>Раздел</th>
+            <th style="width:90px;">Ссылки</th>
+        </tr></thead>
+        <tbody>
+        <?php if (!$pageItems): ?>
+            <tr><td colspan="4" style="text-align:center;padding:24px;color:#999;">Ничего не найдено</td></tr>
+        <?php endif; ?>
+        <?php foreach ($pageItems as $a): $cur = (int)$a['id'] === $articleId; ?>
+            <tr class="<?= $cur ? 'bx-row-selected' : '' ?>">
+                <td>#<?= (int)$a['id'] ?></td>
+                <td><a href="<?= $h($url(['article' => (int)$a['id']])) ?>"<?= $cur ? ' style="font-weight:600;"' : '' ?>><?= $h($a['name']) ?></a></td>
+                <td style="color:#666;"><?= $h($secOptions[(int)($a['section_id'] ?? 0)] ?? 'Без раздела') ?></td>
+                <td><?php if ($anchorStore->get((int)$a['id'])): ?><span style="color:#16a34a;" title="Ссылки уже вставлены">✓ есть</span><?php endif; ?></td>
+            </tr>
+        <?php endforeach; ?>
+        </tbody>
+    </table>
+    <div class="bx-table-toolbar">
+        <div class="left">
+            <?php if ($page > 1): ?><a class="bx-btn bx-btn-sm" href="<?= $h($url(['page' => $page - 1])) ?>">←</a><?php endif; ?>
+            <?php $prevN = 0; foreach ($pageNums as $n): ?>
+                <?php if ($prevN && $n - $prevN > 1): ?><span>…</span><?php endif; ?>
+                <a class="bx-btn bx-btn-sm<?= $n === $page ? ' bx-btn-primary' : '' ?>" href="<?= $h($url(['page' => $n])) ?>"><?= $n ?></a>
+                <?php $prevN = $n; endforeach; ?>
+            <?php if ($page < $pages): ?><a class="bx-btn bx-btn-sm" href="<?= $h($url(['page' => $page + 1])) ?>">→</a><?php endif; ?>
+        </div>
+        <div class="right" style="color:#666;font-size:12px;align-items:center;">
+            Выбрана: <b>#<?= (int)$articleId ?> <?= $h($article['name'] ?? '') ?></b> · показано <?= count($pageItems) ?> из <?= $total ?>
+        </div>
     </div>
 </div>
-<script>
-(function () {
-    var list = document.getElementById('artList'), sec = document.getElementById('artSection'),
-        q = document.getElementById('artSearch'), empty = document.getElementById('artEmpty'),
-        shown = document.getElementById('artShown');
-    function apply() {
-        var s = sec.value, t = q.value.trim().toLowerCase(), n = 0, groups = {};
-        list.querySelectorAll('.art-picker__item').forEach(function (a) {
-            var ok = (!s || a.dataset.section === s) && (!t || a.dataset.search.indexOf(t) !== -1);
-            a.hidden = !ok;
-            if (ok) { n++; groups[a.dataset.section] = true; }
-        });
-        list.querySelectorAll('.art-picker__group').forEach(function (g) { g.hidden = !groups[g.dataset.section]; });
-        empty.hidden = n > 0;
-        shown.textContent = (s || t) ? '· найдено: ' + n : '';
-    }
-    var cur = list.querySelector('.is-current');
-    if (cur) list.scrollTop = cur.offsetTop - list.offsetTop - 60;
-
-    // Переключение статьи без перезагрузки страницы
-    var picker = document.getElementById('artPicker');
-    var busy = false;
-    function load(url, full) {
-        if (busy) return;
-        busy = true;
-        var main = document.getElementById('artMain');
-        main.style.opacity = '.5';
-        fetch(url, {credentials: 'same-origin'}).then(function (r) { return r.text(); }).then(function (html) {
-            var doc = new DOMParser().parseFromString(html, 'text/html');
-            var newMain = doc.getElementById('artMain');
-            if (!newMain) { location.href = url; return; }
-            main.innerHTML = newMain.innerHTML;
-            if (full) {
-                // сменился инфоблок: список статей другой, пересобираем панель выбора
-                picker.innerHTML = doc.getElementById('artPicker').innerHTML;
-                bindPicker();
-            } else {
-                var nf = doc.querySelector('#artPicker .art-picker__foot');
-                picker.querySelector('.art-picker__foot').innerHTML = nf.innerHTML;
-                var nc = new URL(url, location.href).searchParams.get('article');
-                list.querySelectorAll('.art-picker__item').forEach(function (a) {
-                    a.classList.toggle('is-current', new URL(a.href).searchParams.get('article') === nc);
-                });
-                apply();
-            }
-            history.pushState(null, '', url);
-            main.style.opacity = '';
-        }).catch(function () { location.href = url; }).then(function () { busy = false; });
-    }
-    function bindPicker() {
-        list = document.getElementById('artList'); sec = document.getElementById('artSection');
-        q = document.getElementById('artSearch'); empty = document.getElementById('artEmpty'); shown = document.getElementById('artShown');
-        sec.addEventListener('change', apply);
-        q.addEventListener('input', apply);
-        q.addEventListener('keydown', function (e) {
-            if (e.key === 'Enter') { e.preventDefault(); var f = list.querySelector('.art-picker__item:not([hidden])'); if (f) load(f.href, false); }
-        });
-        var ib = picker.querySelector('select[name=article_iblock]');
-        // смена инфоблока — обычная загрузка страницы, чтобы список статей точно обновился
-        ib.onchange = function () { location.href = '?tab=anchors&article_iblock=' + encodeURIComponent(ib.value); };
-    }
-    picker.addEventListener('click', function (e) {
-        var a = e.target.closest('a.art-picker__item, .art-picker__foot a');
-        if (!a || e.ctrlKey || e.metaKey) return;
-        e.preventDefault();
-        load(a.href, false);
-    });
-    bindPicker();
-})();
-</script>
-<style>
-.art-picker{padding:14px;display:block}
-.art-picker__top{display:flex;gap:16px;flex-wrap:wrap;align-items:flex-end;margin-bottom:12px}
-.art-picker__search{flex:1;min-width:260px}.art-picker__search input{width:100%;box-sizing:border-box}
-.art-picker__list{max-height:280px;overflow:auto;border:1px solid #e3e6ec;border-radius:8px;background:#fff}
-.art-picker__group{position:sticky;top:0;padding:6px 12px;font-size:12px;font-weight:600;color:#6b7280;background:#f5f6fa;border-bottom:1px solid #e3e6ec}
-.art-picker__item{display:block;padding:7px 12px;color:inherit;text-decoration:none;border-bottom:1px solid #f0f1f5}
-.art-picker__item:hover{background:#f3f4ff}.art-picker__item.is-current{background:#e8e9ff;font-weight:600}
-.art-picker__id{color:#9aa0ad;margin-right:4px}.art-picker__done{color:#16a34a;margin-left:6px}
-.art-picker__empty{padding:18px;text-align:center;color:#999}
-.art-picker__foot{display:flex;justify-content:space-between;align-items:center;gap:12px;margin-top:10px;flex-wrap:wrap}
-.art-picker__muted{color:#9aa0ad}
-.art-picker [hidden]{display:none!important}
-</style>
 
 <div id="artMain">
-<form method="POST" action="?tab=anchors&article_iblock=<?= $articleIblockId ?>&article=<?= $articleId ?>">
+<form method="POST" action="<?= $h($url()) ?>">
     <input type="hidden" name="article" value="<?= $articleId ?>">
     <input type="hidden" name="article_iblock" value="<?= $articleIblockId ?>">
     <div class="bx-table-wrap" style="margin-bottom:16px;">
