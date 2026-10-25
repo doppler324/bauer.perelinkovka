@@ -17,6 +17,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['save_anchor_settings'
         'use_keywords'          => !empty($_POST['use_keywords']),
         'use_synonyms'          => !empty($_POST['use_synonyms']),
         'max_part_words'        => max(1, min(5, (int)($_POST['max_part_words'] ?? 3))),
+        'min_part_words'        => max(1, min(5, (int)($_POST['min_part_words'] ?? 2))),
+        'max_part_targets'      => max(0, (int)($_POST['max_part_targets'] ?? 3)),
         'min_word_len'          => max(1, min(10, (int)($_POST['min_word_len'] ?? 4))),
         'max_links_per_article' => max(0, (int)($_POST['max_links_per_article'] ?? 0)),
         'one_link_per_block'    => !empty($_POST['one_link_per_block']),
@@ -53,6 +55,10 @@ $chk = fn($k) => !empty($anchorSettings[$k]) ? 'checked' : '';
         <div class="bx-settings-row"><label>Ключевые слова (keywords)</label><input type="checkbox" name="use_keywords" value="1" <?= $chk('use_keywords') ?>></div>
         <div class="bx-settings-row"><label>Синонимы (synonyms.json)</label><input type="checkbox" name="use_synonyms" value="1" <?= $chk('use_synonyms') ?>></div>
         <div class="bx-settings-row"><label>Макс. слов в части названия</label><input type="number" name="max_part_words" min="1" max="5" value="<?= (int)$anchorSettings['max_part_words'] ?>"></div>
+        <div class="bx-settings-row"><label>Мин. слов в части названия</label><input type="number" name="min_part_words" min="1" max="5" value="<?= (int)($anchorSettings['min_part_words'] ?? 2) ?>">
+            <span class="hint">2 — однословные части («работа», «новая») не используются как анкоры</span></div>
+        <div class="bx-settings-row"><label>Макс. целей с одинаковой частью названия</label><input type="number" name="max_part_targets" min="0" value="<?= (int)($anchorSettings['max_part_targets'] ?? 3) ?>">
+            <span class="hint">если фраза есть в названиях более чем стольких страниц, она неоднозначна и пропускается; 0 — не проверять</span></div>
         <div class="bx-settings-row"><label>Мин. длина одного слова</label><input type="number" name="min_word_len" min="1" max="10" value="<?= (int)$anchorSettings['min_word_len'] ?>">
             <span class="hint">однословные фразы короче пропускаются</span></div>
         <div class="bx-settings-row"><label>Стоп-слова</label><input type="text" name="stop_words" value="<?= $h(implode(', ', $anchorSettings['stop_words'])) ?>">

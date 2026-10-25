@@ -25,6 +25,23 @@
         });
     }
 
+    // плашка «Загрузка…», чтобы было видно, что запрос идёт
+    function showLoader() {
+        var l = document.getElementById('bp-loader');
+        if (!l) {
+            l = document.createElement('div');
+            l.id = 'bp-loader';
+            l.textContent = 'Загрузка… подбор ссылок может занять некоторое время';
+            l.style.cssText = 'position:fixed;top:12px;left:50%;transform:translateX(-50%);z-index:100000;background:#2c3e50;color:#fff;padding:10px 20px;border-radius:6px;font:14px/1.4 sans-serif;box-shadow:0 2px 10px rgba(0,0,0,.3)';
+            document.body.appendChild(l);
+        }
+        l.style.display = 'block';
+    }
+    function hideLoader() {
+        var l = document.getElementById('bp-loader');
+        if (l) { l.style.display = 'none'; }
+    }
+
     function go(url, opts, mode) {
         // mode: 'push' | 'replace' | 'none'; opts — параметры fetch
         if (window.BP_SESSID && opts && opts.body instanceof FormData && !opts.body.has('sessid')) { opts.body.append('sessid', window.BP_SESSID); }
@@ -32,6 +49,7 @@
         if (!c) { location.href = url; return; }
         c.style.opacity = '.55';
         c.style.pointerEvents = 'none';
+        showLoader();
         var y = window.scrollY, prevPath = location.search;
         fetch(url, Object.assign({credentials: 'same-origin'}, opts || {})).then(function (r) {
             return r.text().then(function (t) { return {url: r.url, text: t}; });
@@ -47,7 +65,7 @@
         }).catch(function () {
             if (!opts || !opts.method || opts.method === 'GET') { location.href = url; } else { alert('Ошибка запроса, попробуйте ещё раз'); }
         }).then(function () {
-            if (my === token) { c.style.opacity = ''; c.style.pointerEvents = ''; }
+            if (my === token) { c.style.opacity = ''; c.style.pointerEvents = ''; hideLoader(); }
         });
     }
 

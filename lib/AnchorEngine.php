@@ -21,6 +21,8 @@ class AnchorEngine
         'use_keywords'      => true,
         'use_synonyms'      => true,
         'max_part_words'    => 3,
+        'min_part_words'    => 2,     // части названия короче этого числа слов не берём (однословные слишком общие)
+        'max_part_targets'  => 3,     // часть названия, встречающаяся в названиях более чем N целей, неоднозначна и пропускается (0 — выкл.)
         'min_word_len'      => 4,
         'max_links_per_article' => 0, // 0 — без ограничения
         'one_link_per_block' => true,
@@ -33,6 +35,16 @@ class AnchorEngine
         'skip_tags'         => ['h1', 'h2', 'h3', 'h4', 'h5', 'h6', 'a', 'code', 'pre', 'script', 'style'],
         'stop_words'        => ['для', 'при', 'без', 'над', 'под', 'или', 'как', 'что', 'это', 'про'],
     ];
+
+    /** Служебные слова, которых не может быть единственным смыслом анкора (всегда, помимо настройки stop_words). */
+    private const COMMON_WORDS = ['и', 'не', 'на', 'в', 'с', 'по', 'как', 'что', 'это', 'так', 'или', 'для', 'при', 'без', 'его', 'она', 'они',
+        'все', 'вы', 'мы', 'из', 'от', 'до', 'за', 'но', 'же', 'бы', 'то', 'ли', 'да', 'нет', 'про', 'над', 'под', 'чем', 'чтобы', 'если',
+        'когда', 'где', 'почему', 'какой', 'можно', 'нужно', 'очень', 'часто', 'также', 'только', 'еще', 'ещё', 'уже', 'себя', 'свой'];
+
+    /** @var array<string,array> фразы целей по "тип:id" (на время жизни объекта) */
+    private array $phraseCache = [];
+    /** @var array{key:string,freq:array<string,int>}|null */
+    private ?array $freqCache = null;
 
     private SynonymProvider $synonyms;
     private array $opt;
@@ -88,13 +100,18 @@ class AnchorEngine
             $add($name, 'название');
         }
         if ($this->opt['use_parts']) {
+            $stop = array_merge($this->opt['stop_words'], self::COMMON_WORDS);
             $nameWords = array_values(array_filter(
                 TextProcessor::words($name),
-                fn($w) => !in_array(mb_strtolower($w['word']), $this->opt['stop_words'], true)
+                fn($w) => !in_array(mb_strtolower($w['word']), $stop, true)
             ));
-            for ($len = max(1, (int)$this->opt['max_part_words']); $len >= 1; $len--) {
+            $minLen = (int)$this->opt['min_word_len'];
+            for ($len = max(1, (int)$this->opt['max_part_words']); $len >= max(1, (int)$this->opt['min_part_words']); $len--) {
                 for ($i = 0; $i + $len <= count($nameWords); $i++) {
                     $slice = array_slice($nameWords, $i, $len);
+                    if (!array_filter($slice, fn($w) => mb_strlen($w['word']) >= max(3, $minLen))) {
+                        continue; // нет ни одного значимого слова
+                    }
                     $add(implode(' ', array_column($slice, 'word')), 'часть названия');
                 }
             }
@@ -153,6 +170,22 @@ class AnchorEngine
         $textNodes = [];
         $this->collect($root, null, $textNodes);
 
+        // слова узлов считаем один раз; набор основ документа отсекает фразы, которых в тексте заведомо нет
+        $wordCache = [];
+        $stemSet = [];
+        $buildStemSet = function () use (&$stemSet, &$textNodes, &$wordCache) {
+            $stemSet = [];
+            foreach ($textNodes as $info) {
+                $id = spl_object_id($info['node']);
+                $wordCache[$id] ??= TextProcessor::words($info['node']->nodeValue);
+                foreach ($wordCache[$id] as $w) {
+                    $stemSet[$w['stem']] = true;
+                }
+            }
+        };
+        $buildStemSet();
+        $partFreq = (int)$this->opt['max_part_targets'] > 0 ? $this->partFrequency($targets) : [];
+
         $matches = [];
         $usedAnchors = [];
         $limit = (int)$this->opt['max_links_per_article'];
@@ -181,8 +214,16 @@ class AnchorEngine
             if (isset($existing[$href])) {
                 continue;
             }
-            foreach ($this->phrasesForTarget($target) as $ph) {
-                $hit = $this->findPhrase($textNodes, $ph['stems'], $usedBlocks);
+            foreach ($this->cachedPhrases($target) as $ph) {
+                if ($ph['source'] === 'часть названия' && $partFreq && ($partFreq[implode(' ', $ph['stems'])] ?? 0) > (int)$this->opt['max_part_targets']) {
+                    continue; // фраза есть в названиях многих целей — неоднозначна
+                }
+                foreach ($ph['stems'] as $stem) {
+                    if (!isset($stemSet[$stem])) {
+                        continue 2;
+                    }
+                }
+                $hit = $this->findPhrase($textNodes, $ph['stems'], $usedBlocks, $wordCache);
                 if (!$hit) {
                     continue;
                 }
@@ -227,6 +268,7 @@ class AnchorEngine
                     ['node' => $before, 'block' => $block],
                     ['node' => $afterNode, 'block' => $block],
                 ]);
+                $buildStemSet();
                 break; // одна ссылка на цель
             }
         }
@@ -296,7 +338,33 @@ class AnchorEngine
     /**
      * @return array|null [индекс узла, начало, конец (байты), id блока]
      */
-    private function findPhrase(array $textNodes, array $stems, array $usedBlocks): ?array
+    private function cachedPhrases(array $target): array
+    {
+        $k = ($target['type'] ?? 'element') . ':' . (int)$target['id'];
+        return $this->phraseCache[$k] ??= $this->phrasesForTarget($target);
+    }
+
+    /** Сколько целей содержат каждую фразу-часть названия (по основам слов). */
+    private function partFrequency(array $targets): array
+    {
+        $key = count($targets) . ':' . ($targets[0]['id'] ?? 0) . ':' . (end($targets)['id'] ?? 0);
+        if ($this->freqCache && $this->freqCache['key'] === $key) {
+            return $this->freqCache['freq'];
+        }
+        $freq = [];
+        foreach ($targets as $t) {
+            foreach ($this->cachedPhrases($t) as $ph) {
+                if ($ph['source'] === 'часть названия') {
+                    $k = implode(' ', $ph['stems']);
+                    $freq[$k] = ($freq[$k] ?? 0) + 1;
+                }
+            }
+        }
+        $this->freqCache = ['key' => $key, 'freq' => $freq];
+        return $freq;
+    }
+
+    private function findPhrase(array $textNodes, array $stems, array $usedBlocks, array &$wordCache): ?array
     {
         $n = count($stems);
         foreach ($textNodes as $ni => $info) {
@@ -304,7 +372,7 @@ class AnchorEngine
                 continue;
             }
             $text = $info['node']->nodeValue;
-            $words = TextProcessor::words($text);
+            $words = $wordCache[spl_object_id($info['node'])] ??= TextProcessor::words($text);
             for ($i = 0; $i + $n <= count($words); $i++) {
                 for ($j = 0; $j < $n; $j++) {
                     if ($words[$i + $j]['stem'] !== $stems[$j]) {
