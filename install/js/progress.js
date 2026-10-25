@@ -66,6 +66,18 @@
     };
     Panel.prototype.close = function () { clearInterval(this.timer); this.ov.remove(); };
 
+    // Первый полный JSON-объект из ответа: если сервер или Битрикс дописал что-то после него, это не мешает
+    function firstJson(t) {
+        var s = t.indexOf('{'), depth = 0, str = false, esc = false;
+        if (s < 0) { return t; }
+        for (var i = s; i < t.length; i++) {
+            var c = t.charAt(i);
+            if (str) { if (esc) { esc = false; } else if (c === '\\') { esc = true; } else if (c === '"') { str = false; } continue; }
+            if (c === '"') { str = true; } else if (c === '{') { depth++; } else if (c === '}' && --depth === 0) { return t.slice(s, i + 1); }
+        }
+        return t;
+    }
+
     function api(params) {
         var body = new URLSearchParams();
         if (window.BP_SESSID) { body.append('sessid', window.BP_SESSID); }
@@ -75,7 +87,7 @@
         });
         return fetch(window.BP_API || 'progress_api.php', {method: 'POST', body: body, credentials: 'same-origin'}).then(function (r) {
             return r.text().then(function (t) {
-                try { return JSON.parse(t); } catch (e) {
+                try { return JSON.parse(firstJson(t)); } catch (e) {
                     var plain = t.replace(/<[^>]*>/g, ' ').replace(/\s+/g, ' ').trim();
                     throw new Error('Сервер вернул не JSON (HTTP ' + r.status + ', ' + t.length + ' байт): ' + plain.slice(0, 150) + (plain.length > 300 ? ' … ' + plain.slice(-150) : ''));
                 }

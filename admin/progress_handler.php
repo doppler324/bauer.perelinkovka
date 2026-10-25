@@ -11,38 +11,36 @@ use Bauer\Perelinkovka\KeywordMatchingStrategy;
 use Bauer\Perelinkovka\TfIdfStrategy;
 use Bauer\Perelinkovka\MassAnchors;
 @set_time_limit(120);
-// Любой посторонний вывод (предупреждения, HTML) и фатальные ошибки превращаем в понятный JSON
+// Ответ отправляем сразу и целиком: Битрикс при завершении сбрасывает свои буферы вывода раньше наших
+// shutdown-функций, поэтому полагаться на них нельзя. Посторонний вывод (предупреждения, HTML) отбрасываем.
 ob_start();
-register_shutdown_function(function () {
-    $err = error_get_last();
-    $noise = trim((string)ob_get_contents());
-    if ($err && in_array($err['type'], [E_ERROR, E_PARSE, E_CORE_ERROR, E_COMPILE_ERROR, E_USER_ERROR], true)) {
-        while (ob_get_level()) { ob_end_clean(); }
-        header('Content-Type: application/json; charset=utf-8');
-        http_response_code(500);
-        echo json_encode(['ok' => false, 'error' => 'Фатальная ошибка PHP: ' . $err['message'] . ' (' . basename($err['file']) . ':' . $err['line'] . ')'], JSON_UNESCAPED_UNICODE);
+$GLOBALS['bp_sent'] = false;
+$send = function (array $a, int $code = 200) {
+    while (ob_get_level() > 0) {
+        @ob_end_clean();
+    }
+    $GLOBALS['bp_sent'] = true;
+    http_response_code($code);
+    header('Content-Type: application/json; charset=utf-8');
+    echo json_encode($a, JSON_UNESCAPED_UNICODE | JSON_INVALID_UTF8_SUBSTITUTE);
+};
+// фатальные ошибки PHP и ответ, который так и не был отправлен, превращаем в понятный JSON
+register_shutdown_function(function () use ($send) {
+    if ($GLOBALS['bp_sent']) {
         return;
     }
-    $body = (string)ob_get_clean();
-    header('Content-Type: application/json; charset=utf-8');
-    $pos = strpos($body, '{"');
-    $json = null;
-    if ($pos !== false) {
-        // вокруг JSON может быть посторонний вывод (предупреждения, хвост Битрикса): берём самый длинный корректный фрагмент
-        for ($end = strlen($body), $tries = 0; $tries < 40 && ($end = strrpos(substr($body, 0, $end), '}')) !== false; $tries++) {
-            $cand = substr($body, $pos, $end - $pos + 1);
-            if (json_decode($cand, true) !== null) {
-                $json = $cand;
-                break;
-            }
-        }
+    $err = error_get_last();
+    if ($err && in_array($err['type'], [E_ERROR, E_PARSE, E_CORE_ERROR, E_COMPILE_ERROR, E_USER_ERROR], true)) {
+        $send(['ok' => false, 'error' => 'Фатальная ошибка PHP: ' . $err['message'] . ' (' . basename($err['file']) . ':' . $err['line'] . ')'], 500);
+        return;
     }
-    echo $json ?? json_encode(['ok' => false, 'error' => 'Ответ сервера не разобран. Начало: ' . mb_substr(strip_tags($body), 0, 150) . ' … Конец: ' . mb_substr(strip_tags($body), -200)], JSON_UNESCAPED_UNICODE | JSON_INVALID_UTF8_SUBSTITUTE);
+    $noise = trim(strip_tags((string)ob_get_contents()));
+    $send(['ok' => false, 'error' => 'Пустой ответ сервера' . ($noise !== '' ? ': ' . mb_substr($noise, 0, 300) : '')], 500);
 });
 
 $dp = \Bauer\Perelinkovka\Env::provider();
-$out = fn(array $a) => print(json_encode($a + ['ok' => true], JSON_UNESCAPED_UNICODE | JSON_INVALID_UTF8_SUBSTITUTE));
-$fail = function (string $m) { http_response_code(400); echo json_encode(['ok' => false, 'error' => $m], JSON_UNESCAPED_UNICODE); exit; };
+$out = fn(array $a) => $send($a + ['ok' => true]);
+$fail = function (string $m) use ($send) { $send(['ok' => false, 'error' => $m], 400); exit; };
 
 if (($_SERVER['REQUEST_METHOD'] ?? '') !== 'POST') {
     $fail('Нужен POST');
