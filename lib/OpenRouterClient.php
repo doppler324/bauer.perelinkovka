@@ -27,7 +27,7 @@ class OpenRouterClient implements AiClientInterface
         $this->defaultEmbeddingModel = $config['embedding_model'] ?? $this->defaultEmbeddingModel;
         $this->defaultChatModel = $config['chat_model'] ?? $this->defaultChatModel;
         $this->timeout = $config['timeout'] ?? $this->timeout;
-        $this->proxy = trim((string)($config['proxy'] ?? ''));
+        $this->proxy = self::normalizeProxy((string)($config['proxy'] ?? ''));
     }
 
     public function isAvailable(): bool
@@ -63,6 +63,19 @@ class OpenRouterClient implements AiClientInterface
         curl_close($ch);
 
         return $httpCode === 200;
+    }
+
+    /**
+     * Адрес прокси в формате curl. Понимает и популярную запись host:port:user:pass (считается HTTP-прокси),
+     * готовые адреса с протоколом (http://, https://, socks5://) оставляет как есть.
+     */
+    public static function normalizeProxy(string $proxy): string
+    {
+        $proxy = trim($proxy);
+        if ($proxy !== '' && !str_contains($proxy, '://') && preg_match('/^([^:\/@\s]+):(\d{1,5}):([^:\s]+):(\S+)$/', $proxy, $m)) {
+            return 'http://' . rawurlencode($m[3]) . ':' . rawurlencode($m[4]) . '@' . $m[1] . ':' . $m[2];
+        }
+        return $proxy;
     }
 
     /** Настройки curl для запросов через прокси (http://host:port, socks5://user:pass@host:port); пусто — напрямую. */
