@@ -3,7 +3,7 @@
 чтобы стили не ломали интерфейс Битрикса. Результат: install/css/admin.css."""
 import re, sys, pathlib
 
-root = pathlib.Path(__file__).resolve().parent.parent / 'bauer.perelinkovka' / 'install' / 'css'
+root = pathlib.Path(__file__).resolve().parent.parent.parent / 'install' / 'css'
 SCOPE = '#bp-app'
 
 def scope_sel(sel):
