@@ -30,7 +30,7 @@ $APPLICATION->SetTitle('Перелинковка: ' . $title);
 // версия по времени файла, чтобы браузер не держал старый admin.css после обновления
 $bpCss = '/bitrix/css/bauer.perelinkovka/admin.css';
 $APPLICATION->SetAdditionalCSS($bpCss . '?v=' . (int)@filemtime($_SERVER['DOCUMENT_ROOT'] . $bpCss));
-$APPLICATION->AddHeadScript('/bitrix/js/bauer.perelinkovka/tablekit.js');
+$APPLICATION->AddHeadScript('/bitrix/js/bauer.perelinkovka/tablekit.js?v=' . (int)@filemtime($_SERVER['DOCUMENT_ROOT'] . '/bitrix/js/bauer.perelinkovka/tablekit.js'));
 
 // список статей на CAdminList строится до prolog_admin_after (CheckListMode)
 if ($tab === 'anchors') {
@@ -55,8 +55,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && !check_bitrix_sessid()) {
         window.BP_API = <?= CUtil::PhpToJSObject(Env::apiUrl()) ?>;
         window.BP_SESSID = <?= CUtil::PhpToJSObject(bitrix_sessid()) ?>;
     </script>
-    <script src="/bitrix/js/bauer.perelinkovka/ajaxnav.js"></script>
-    <script src="/bitrix/js/bauer.perelinkovka/progress.js"></script>
+    <?php
+    // версия по времени файла: браузер не держит старые скрипты после обновления
+    $bpJs = fn(string $f) => '/bitrix/js/bauer.perelinkovka/' . $f . '?v=' . (int)@filemtime($_SERVER['DOCUMENT_ROOT'] . '/bitrix/js/bauer.perelinkovka/' . $f);
+    ?>
+    <script src="<?= $bpJs('ajaxnav.js') ?>"></script>
+    <script src="<?= $bpJs('progress.js') ?>"></script>
     <?php
 }
 

@@ -197,6 +197,8 @@
         }).catch(function (e) { p.fail(e.message); });
     }
 
+    window.bpRunEmbIndex = runEmbIndex;
+
     // Перехватываем отправку форм раньше общего ajaxnav
     document.addEventListener('submit', function (e) {
         var f = e.target;
