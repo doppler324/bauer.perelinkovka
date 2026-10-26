@@ -158,6 +158,14 @@ class Env
         return defined('OPENROUTER_API_KEY') ? (string)OPENROUTER_API_KEY : '';
     }
 
+    /** Прокси для запросов к OpenRouter (настройки модуля; пусто — напрямую). */
+    public static function proxy(): string
+    {
+        return self::$mode === 'bitrix'
+            ? trim((string)\Bitrix\Main\Config\Option::get('bauer.perelinkovka', 'openrouter_proxy', ''))
+            : (defined('OPENROUTER_PROXY') ? (string)OPENROUTER_PROXY : '');
+    }
+
     /**
      * Сервис эмбеддингов. Без $force — только если включён в настройках анкоров и задан ключ;
      * с $force (расчёт векторов целей) — независимо от флага.
@@ -170,10 +178,7 @@ class Env
             return null;
         }
         $model = trim((string)($o['embedding_model'] ?? '')) ?: 'openai/text-embedding-3-small';
-        $proxy = self::$mode === 'bitrix'
-            ? trim((string)\Bitrix\Main\Config\Option::get('bauer.perelinkovka', 'openrouter_proxy', ''))
-            : (defined('OPENROUTER_PROXY') ? (string)OPENROUTER_PROXY : '');
-        $client = new OpenRouterClient(['api_key' => $key, 'embedding_model' => $model, 'timeout' => 60, 'proxy' => $proxy]);
+        $client = new OpenRouterClient(['api_key' => $key, 'embedding_model' => $model, 'timeout' => 60, 'proxy' => self::proxy()]);
         $store = new VectorStore(self::$mode === 'bitrix' ? null : self::$dataDir . '/vectors.json');
         return new Embeddings($client, $store, $model);
     }
