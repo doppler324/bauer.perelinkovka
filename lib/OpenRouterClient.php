@@ -217,10 +217,11 @@ class OpenRouterClient implements AiClientInterface
         $previousTimeout = $this->timeout;
         $this->timeout = $options['timeout'] ?? 120;
         try {
+            $model = $options['model'] ?? 'google/gemini-2.5-flash-image';
             $result = $this->request('/chat/completions', [
-                'model'      => $options['model'] ?? 'google/gemini-2.5-flash-image',
+                'model'      => $model,
                 'messages'   => [['role' => 'user', 'content' => $prompt]],
-                'modalities' => ['image', 'text'],
+                'modalities' => $this->imageOnlyModel($model) ? ['image'] : ['image', 'text'],
             ]);
         } finally {
             $this->timeout = $previousTimeout;
@@ -235,5 +236,11 @@ class OpenRouterClient implements AiClientInterface
             throw new \RuntimeException('Не удалось декодировать картинку');
         }
         return ['data' => $data, 'mime' => strtolower($m[1])];
+    }
+
+    /** Модели, которые умеют только рисовать (без текстового ответа): им нужен modalities = ['image']. */
+    private function imageOnlyModel(string $model): bool
+    {
+        return (bool)preg_match('~^(black-forest-labs|sourceful|bytedance-seed)/~', $model);
     }
 }
