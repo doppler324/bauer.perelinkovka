@@ -61,16 +61,34 @@ $totalBlocks = array_sum(array_column($articles, 'blocks'));
         <?php if (!$articles): ?>
             <p>В этом инфоблоке нет статей с блоками «[Изображение: …]».</p>
         <?php else: ?>
-            <p>Статей: <b><?= count($articles) ?></b>, картинок к генерации: <b><?= (int)$totalBlocks ?></b>.</p>
-            <table class="bx-table">
-                <tr><th>ID</th><th>Статья</th><th>Картинок</th></tr>
-                <?php foreach ($articles as $a): ?>
-                    <tr><td><?= (int)$a['id'] ?></td><td><?= $h($a['name']) ?></td><td><?= (int)$a['blocks'] ?></td></tr>
-                <?php endforeach; ?>
-            </table>
+            <p>Статей: <b><?= count($articles) ?></b>, картинок к генерации: <b><?= (int)$totalBlocks ?></b>. Отметьте статьи, в которые нужно подставить картинки.</p>
+            <div class="bx-table-wrap" style="margin-bottom:16px;">
+                <div class="bx-table-toolbar">
+                    <div class="left"><b>Статьи с блоками «[Изображение: …]»</b></div>
+                    <div class="right"><button type="submit" name="img_run" value="1" class="bx-btn bx-btn-sm bx-btn-success">🖼️ Подставить в выбранные</button></div>
+                </div>
+                <div class="tk-filters">
+                    <input type="search" id="imgSearch" placeholder="Поиск по названию или номеру">
+                    <span class="mass-muted" id="imgSel"></span>
+                </div>
+                <table class="bx-table" id="imgTable">
+                    <thead><tr><th style="width:30px;"><input type="checkbox" id="imgAll" title="Выбрать все найденные (на всех страницах)"></th><th style="width:90px;">ID</th><th>Статья</th><th style="width:110px;">Картинок</th></tr></thead>
+                    <tbody>
+                    <?php foreach ($articles as $a): ?>
+                        <tr data-s="<?= $h(mb_strtolower('#' . $a['id'] . ' ' . $a['name'])) ?>">
+                            <td><input type="checkbox" name="ids[]" value="<?= (int)$a['id'] ?>" data-blocks="<?= (int)$a['blocks'] ?>"></td>
+                            <td><?= (int)$a['id'] ?></td><td><?= $h($a['name']) ?></td><td><?= (int)$a['blocks'] ?></td>
+                        </tr>
+                    <?php endforeach; ?>
+                    </tbody>
+                </table>
+                <div class="tk-foot"><span class="mass-muted" id="imgInfo"></span><span class="tk-pager" id="imgPager"></span>
+                    <label class="mass-muted">на странице <select id="imgSize"><option>25</option><option selected>50</option><option>100</option><option>200</option></select></label></div>
+            </div>
             <p class="hint">Картинки сохраняются в <code><?= $h(ImageTexts::SAVE_DIR) ?></code>, блок в тексте заменяется тегом картинки с описанием в alt. Если генерация блока не удалась, он остаётся в тексте.</p>
-            <script>window.BP_IMAGE_IDS = <?= json_encode(array_column($articles, 'id')) ?>;</script>
-            <button type="submit" name="img_run" value="1" class="bx-btn bx-btn-primary">Подставить картинки</button>
+            <script>
+            bpTable({table: '#imgTable', search: '#imgSearch', master: '#imgAll', pager: '#imgPager', info: '#imgInfo', selected: '#imgSel', sizeSel: '#imgSize', size: 50});
+            </script>
         <?php endif; ?>
     </div>
 </form>

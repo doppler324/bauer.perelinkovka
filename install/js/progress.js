@@ -224,7 +224,9 @@
 
     // ---------- Картинки в статьях ----------
     function runImages(form) {
-        var ids = window.BP_IMAGE_IDS || [], p = new Panel('Подстановка картинок', ['Генерация картинок', 'Готово']);
+        var ids = Array.prototype.map.call(form.querySelectorAll('input[name="ids[]"]:checked'), function (c) { return c.value; });
+        if (!ids.length) { alert('Отметьте статьи, в которые нужно подставить картинки.'); return; }
+        var p = new Panel('Подстановка картинок', ['Генерация картинок', 'Готово']);
         var i = 0, made = 0, errors = [];
         (function step() {
             if (p.cancelled || i >= ids.length) { return finish(); }
@@ -256,7 +258,7 @@
             e.preventDefault(); e.stopImmediatePropagation(); runAnchorsPlan(f);
         } else if (f.id === 'embIndexForm') {
             e.preventDefault(); e.stopImmediatePropagation(); runEmbIndex();
-        } else if (f.id === 'imagesForm' && act === 'img_run') {
+        } else if (f.id === 'imagesForm' && e.submitter && e.submitter.name === 'img_run') {
             e.preventDefault(); e.stopImmediatePropagation(); runImages(f);
         } else if (f.id === 'anchorsApplyForm') {
             e.preventDefault(); e.stopImmediatePropagation(); runAnchorsApply(f);
