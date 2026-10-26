@@ -222,6 +222,29 @@
 
     window.bpRunEmbIndex = runEmbIndex;
 
+    // ---------- Картинки в статьях ----------
+    function runImages(form) {
+        var ids = window.BP_IMAGE_IDS || [], p = new Panel('Подстановка картинок', ['Генерация картинок', 'Готово']);
+        var i = 0, made = 0, errors = [];
+        (function step() {
+            if (p.cancelled || i >= ids.length) { return finish(); }
+            api({step: 'images_apply', id: ids[i]}).then(function (r) {
+                made += r.done;
+                errors = errors.concat(r.errors || []);
+                // если за вызов ничего не вышло, статью пропускаем, иначе цикл не кончится
+                if (r.left === 0 || r.done === 0) { i++; }
+                p.set(i, ids.length, 'Статей обработано: ' + i + ' из ' + ids.length + ' · картинок создано: ' + made);
+                step();
+            }).catch(function (e) { p.fail(e.message); });
+        })();
+        function finish() {
+            p.stage(1); p.close();
+            var msg = 'Картинок создано: ' + made + (errors.length ? '\n\nОшибки (' + errors.length + '):\n' + errors.slice(0, 10).join('\n') : '');
+            alert(msg);
+            bpNav('?tab=images&img_iblock=' + encodeURIComponent(form.elements.img_iblock.value));
+        }
+    }
+
     // Перехватываем отправку форм раньше общего ajaxnav
     document.addEventListener('submit', function (e) {
         var f = e.target;
@@ -233,6 +256,8 @@
             e.preventDefault(); e.stopImmediatePropagation(); runAnchorsPlan(f);
         } else if (f.id === 'embIndexForm') {
             e.preventDefault(); e.stopImmediatePropagation(); runEmbIndex();
+        } else if (f.id === 'imagesForm' && act === 'img_run') {
+            e.preventDefault(); e.stopImmediatePropagation(); runImages(f);
         } else if (f.id === 'anchorsApplyForm') {
             e.preventDefault(); e.stopImmediatePropagation(); runAnchorsApply(f);
         }

@@ -206,4 +206,34 @@ class OpenRouterClient implements AiClientInterface
             'finish_reason' => $result['choices'][0]['finish_reason'] ?? '',
         ];
     }
+
+    /**
+     * Генерирует картинку по описанию через chat/completions (modalities: image).
+     * @return array{data: string, mime: string} бинарные данные картинки и mime-тип
+     * @throws \RuntimeException
+     */
+    public function generateImage(string $prompt, array $options = []): array
+    {
+        $previousTimeout = $this->timeout;
+        $this->timeout = $options['timeout'] ?? 120;
+        try {
+            $result = $this->request('/chat/completions', [
+                'model'      => $options['model'] ?? 'google/gemini-2.5-flash-image',
+                'messages'   => [['role' => 'user', 'content' => $prompt]],
+                'modalities' => ['image', 'text'],
+            ]);
+        } finally {
+            $this->timeout = $previousTimeout;
+        }
+
+        $url = $result['choices'][0]['message']['images'][0]['image_url']['url'] ?? '';
+        if (!preg_match('~^data:(image/[a-z0-9.+-]+);base64,(.+)$~is', $url, $m)) {
+            throw new \RuntimeException('OpenRouter не вернул картинку');
+        }
+        $data = base64_decode($m[2], true);
+        if ($data === false || $data === '') {
+            throw new \RuntimeException('Не удалось декодировать картинку');
+        }
+        return ['data' => $data, 'mime' => strtolower($m[1])];
+    }
 }
