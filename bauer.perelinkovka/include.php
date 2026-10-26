@@ -1,5 +1,7 @@
 <?php
 \Bitrix\Main\Loader::registerAutoLoadClasses('bauer.perelinkovka', [
+    'Bauer\Perelinkovka\ArticleImages' => 'lib/ArticleImages.php',
+    'Bauer\Perelinkovka\ImageTexts' => 'lib/ImageTexts.php',
     'Bauer\Perelinkovka\Linker' => 'lib/Linker.php',
     'Bauer\Perelinkovka\TextProcessor' => 'lib/TextProcessor.php',
     'Bauer\Perelinkovka\DataProviderInterface' => 'lib/DataProviderInterface.php',
