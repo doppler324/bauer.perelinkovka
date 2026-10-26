@@ -220,12 +220,20 @@ class OpenRouterClient implements AiClientInterface
         $this->timeout = $options['timeout'] ?? 120;
         try {
             try {
-                $result = $this->request('/images', array_filter([
-                    'model'        => $model,
-                    'prompt'       => $prompt,
-                    'aspect_ratio' => $options['aspect_ratio'] ?? '16:9',
-                    'resolution'   => $options['resolution'] ?? '1K',
-                ]));
+                try {
+                    $result = $this->request('/images', [
+                        'model'        => $model,
+                        'prompt'       => $prompt,
+                        'aspect_ratio' => $options['aspect_ratio'] ?? '16:9',
+                        'resolution'   => $options['resolution'] ?? '1K',
+                    ]);
+                } catch (\RuntimeException $e) {
+                    // модель не поддерживает формат или размер: просим без них, пусть выберет сама
+                    if (strpos($e->getMessage(), 'requested parameter') === false) {
+                        throw $e;
+                    }
+                    $result = $this->request('/images', ['model' => $model, 'prompt' => $prompt]);
+                }
                 $b64 = $result['data'][0]['b64_json'] ?? '';
                 $mime = $result['data'][0]['media_type'] ?? 'image/png';
             } catch (\RuntimeException $e) {
