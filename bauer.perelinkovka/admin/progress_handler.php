@@ -102,6 +102,15 @@ try {
         $out(['applied' => $r['applied'], 'articles' => $r['articles']]);
         exit;
     }
+    // ---------- Картинки: подстановка в тексты статей ----------
+    if ($step === 'images_apply') {
+        if (!\Bauer\Perelinkovka\Env::isBitrix()) {
+            $fail('Подстановка картинок работает только в Битриксе');
+        }
+        $r = \Bauer\Perelinkovka\ImageTexts::processArticle((int)($_POST['id'] ?? 0), 2);
+        $out(['done' => $r['done'], 'left' => $r['left'], 'errors' => $r['errors']]);
+        exit;
+    }
     $fail('Неизвестный шаг');
 } catch (\Throwable $e) {
     $fail($e->getMessage());

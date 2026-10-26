@@ -7,7 +7,8 @@
 use Bauer\Perelinkovka\Env;
 
 const BP_TEXT_TABS = ['anchors', 'anchors_mass', 'anchor_settings', 'synonyms'];
-const BP_ALL_TABS = ['blocks', 'list', 'stats', 'anchors', 'anchors_mass', 'anchor_settings', 'synonyms'];
+const BP_IMAGE_TABS = ['images'];
+const BP_ALL_TABS = ['blocks', 'list', 'stats', 'anchors', 'anchors_mass', 'anchor_settings', 'synonyms', 'images'];
 
 function bp_tab(?string $tab): string
 {
@@ -19,9 +20,9 @@ function bp_section_titles(string $tab): array
     $titles = [
         'blocks' => 'Блоки и правила', 'list' => 'Список связей', 'stats' => 'Статистика',
         'anchors' => 'Анкоры в текстах', 'anchors_mass' => 'Массовая расстановка',
-        'anchor_settings' => 'Настройки анкоров', 'synonyms' => 'Синонимы',
+        'anchor_settings' => 'Настройки анкоров', 'synonyms' => 'Синонимы', 'images' => 'Подстановка картинок',
     ];
-    $section = in_array($tab, BP_TEXT_TABS, true) ? 'Перелинковка внутри текстов' : 'Перелинковка блоков';
+    $section = in_array($tab, BP_TEXT_TABS, true) ? 'Перелинковка внутри текстов' : (in_array($tab, BP_IMAGE_TABS, true) ? 'Картинки' : 'Перелинковка блоков');
     return [$section, $titles[$tab] ?? ''];
 }
 
@@ -29,14 +30,18 @@ function bp_section_titles(string $tab): array
 function bp_render_menus(string $tab, string $settingsUrl = ''): void
 {
     $isText = in_array($tab, BP_TEXT_TABS, true);
+    $isImages = in_array($tab, BP_IMAGE_TABS, true);
     $a = fn(string $t, string $label) => '<a href="?tab=' . $t . '" class="' . ($tab === $t ? 'active' : '') . '">' . $label . '</a>';
     ?>
     <div class="bx-menu" style="background:#2c3e50;border-bottom:1px solid #1f2d3a;">
-        <a href="?tab=blocks" class="<?= !$isText ? 'active' : '' ?>">🧩 Перелинковка блоков</a>
+        <a href="?tab=blocks" class="<?= !$isText && !$isImages ? 'active' : '' ?>">🧩 Перелинковка блоков</a>
         <a href="?tab=anchors" class="<?= $isText ? 'active' : '' ?>">✍️ Перелинковка внутри текстов</a>
+        <a href="?tab=images" class="<?= $isImages ? 'active' : '' ?>">🖼️ Картинки</a>
     </div>
     <div class="bx-menu">
-        <?php if ($isText): ?>
+        <?php if ($isImages): ?>
+            <?= $a('images', '🖼️ Подстановка картинок') ?>
+        <?php elseif ($isText): ?>
             <?= $a('anchors', '🔗 Анкоры и синонимы') ?>
             <?= $a('anchors_mass', '📚 Массовая расстановка') ?>
             <?= $a('synonyms', '📖 Синонимы') ?>
