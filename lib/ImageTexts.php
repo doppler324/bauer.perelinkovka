@@ -14,11 +14,12 @@ class ImageTexts
     public const SAVE_DIR = '/upload/article_images';
     public const DEFAULT_MODEL = 'google/gemini-2.5-flash-image';
 
-    /** Настройки вкладки: model, style. Ключ и прокси OpenRouter общие, из настроек модуля. */
+    /** Настройки вкладки: api_key (свой ключ для картинок), model, style. Прокси общий, из настроек модуля. */
     public static function settings(): array
     {
         $saved = Env::store()->read('image_settings');
         return array_replace([
+            'api_key' => '',
             'model'   => self::DEFAULT_MODEL,
             'style'   => ArticleImages::DEFAULT_STYLE,
         ], is_array($saved) ? array_filter($saved, fn($v) => $v !== '') : []);
@@ -26,7 +27,9 @@ class ImageTexts
 
     public static function saveSettings(array $s): bool
     {
+        $old = self::settings();
         return Env::store()->write('image_settings', [
+            'api_key' => trim((string)($s['api_key'] ?? '')) !== '' ? trim((string)$s['api_key']) : $old['api_key'],
             'model'   => trim((string)($s['model'] ?? '')) ?: self::DEFAULT_MODEL,
             'style'   => trim((string)($s['style'] ?? '')) ?: ArticleImages::DEFAULT_STYLE,
         ]);
@@ -56,9 +59,9 @@ class ImageTexts
     public static function generator(): ArticleImages
     {
         $s = self::settings();
-        $key = Env::apiKey();
+        $key = $s['api_key'] !== '' ? $s['api_key'] : Env::apiKey();
         if ($key === '') {
-            throw new \RuntimeException('Не задан ключ OpenRouter: Настройки продукта → Модули → Перелинковка');
+            throw new \RuntimeException('Не задан ключ OpenRouter для картинок: укажите его в настройках вкладки «Подстановка картинок»');
         }
         return new ArticleImages(
             new OpenRouterClient(['api_key' => $key, 'proxy' => Env::proxy()]),

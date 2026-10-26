@@ -39,7 +39,8 @@ $totalBlocks = array_sum(array_column($articles, 'blocks'));
     <input type="hidden" name="img_iblock" value="<?= (int)$iblockId ?>">
     <div class="bx-settings-section">
         <h3>Настройки генерации</h3>
-        <p class="hint" style="margin:0 0 10px;">Ключ OpenRouter и прокси общие с остальным модулем: <?= Env::apiKey() !== '' ? 'ключ задан' : '<b>ключ не задан</b>' ?>, <?= Env::proxy() !== '' ? 'прокси задан' : 'прокси не задан (запросы идут напрямую)' ?>. Менять их нужно в настройках модуля: Настройки продукта → Модули → Перелинковка.</p>
+        <p class="hint" style="margin:0 0 10px;">Для картинок используется отдельный ключ OpenRouter, он хранится на сервере и в браузер не отдаётся. Пустое поле оставляет прежний ключ (<?= $settings['api_key'] !== '' ? 'сейчас задан' : 'сейчас не задан' ?>). Прокси общий, из настроек модуля (Настройки продукта → Модули → Перелинковка): <?= Env::proxy() !== '' ? 'задан' : '<b>не задан</b>, запросы идут напрямую' ?>.</p>
+        <p><label>API-ключ OpenRouter для картинок<br><input type="password" name="api_key" value="" autocomplete="off" style="width:420px;"></label></p>
         <p><label>Модель<br><input type="text" name="model" value="<?= $h($settings['model']) ?>" style="width:420px;"></label></p>
         <p><label>Общий стиль картинок (дописывается к описанию)<br><textarea name="style" rows="3" style="width:100%;font-family:inherit;"><?= $h($settings['style']) ?></textarea></label></p>
     </div>
