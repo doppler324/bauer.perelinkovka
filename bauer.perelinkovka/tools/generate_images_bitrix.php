@@ -46,7 +46,7 @@ $gen = new ArticleImages(
     new OpenRouterClient(['api_key' => $key]),
     $_SERVER['DOCUMENT_ROOT'] . '/upload/article_images',
     '/upload/article_images',
-    ['model' => $opts['model'] ?? 'google/gemini-2.5-flash-image', 'style' => $opts['style'] ?? '']
+    ['model' => $opts['model'] ?? 'google/gemini-2.5-flash-image', 'style' => is_string($opts['style'] ?? null) ? $opts['style'] : ArticleImages::DEFAULT_STYLE]
 );
 
 $left = isset($opts['limit']) ? (int)$opts['limit'] : null;

@@ -9,6 +9,9 @@ namespace Bauer\Perelinkovka;
  */
 class ArticleImages
 {
+    /** Общий стиль картинок по умолчанию (добавляется к описанию). */
+    public const DEFAULT_STYLE = 'Реалистичная фотография, естественный свет, без текста, надписей и логотипов на изображении.';
+
     private const BLOCK_REGEX = '/\[Изображение:\s*(.+?)\s*\]/us';
 
     private OpenRouterClient $client;
@@ -72,7 +75,7 @@ class ArticleImages
             return $this->urlPrefix . '/' . basename($existing);
         }
 
-        $prompt = trim(($this->options['style'] ?? '') . ' ' . $description);
+        $prompt = trim($description . ' ' . ($this->options['style'] ?? self::DEFAULT_STYLE));
         $img = $this->client->generateImage($prompt, ['model' => $this->options['model'] ?? 'google/gemini-2.5-flash-image']);
 
         $ext = ['image/jpeg' => 'jpg', 'image/webp' => 'webp', 'image/gif' => 'gif'][$img['mime']] ?? 'png';
