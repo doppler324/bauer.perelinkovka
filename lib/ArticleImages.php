@@ -9,8 +9,12 @@ namespace Bauer\Perelinkovka;
  */
 class ArticleImages
 {
+    /** Прежнее значение стиля по умолчанию: сохранённое такое же считается незаданным. */
+    public const OLD_DEFAULT_STYLE = 'Реалистичная фотография, естественный свет, без текста, надписей и логотипов на изображении.';
+
     /** Общий стиль картинок по умолчанию (добавляется к описанию). */
-    public const DEFAULT_STYLE = 'Реалистичная фотография, естественный свет, без текста, надписей и логотипов на изображении.';
+    public const DEFAULT_STYLE = 'Style: simple, clean, schematic illustration-like photo, not photorealistic. Flat even lighting, plain light neutral background, minimal details, only the objects needed to show the idea, clear composition. '
+        . 'Strictly no text of any kind: no letters, words, numbers, captions, labels, signs, watermarks or logos anywhere in the image.';
 
     private const BLOCK_REGEX = '/\[Изображение:\s*(.+?)\s*\]/us';
 
@@ -75,7 +79,7 @@ class ArticleImages
             return $this->urlPrefix . '/' . basename($existing);
         }
 
-        $prompt = trim($description . ' ' . ($this->options['style'] ?? self::DEFAULT_STYLE));
+        $prompt = trim('Image for an article. Scene to show (description in Russian): ' . $description . "\n\n" . ($this->options['style'] ?? self::DEFAULT_STYLE));
         $img = $this->client->generateImage($prompt, ['model' => $this->options['model'] ?? 'google/gemini-2.5-flash-image']);
 
         $ext = ['image/jpeg' => 'jpg', 'image/webp' => 'webp', 'image/gif' => 'gif'][$img['mime']] ?? 'png';

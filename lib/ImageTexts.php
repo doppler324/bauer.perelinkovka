@@ -18,6 +18,9 @@ class ImageTexts
     public static function settings(): array
     {
         $saved = Env::store()->read('image_settings');
+        if (is_array($saved) && ($saved['style'] ?? '') === ArticleImages::OLD_DEFAULT_STYLE) {
+            unset($saved['style']);
+        }
         return array_replace([
             'api_key' => '',
             'model'   => self::DEFAULT_MODEL,
