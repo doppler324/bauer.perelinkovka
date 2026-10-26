@@ -206,4 +206,67 @@ class OpenRouterClient implements AiClientInterface
             'finish_reason' => $result['choices'][0]['finish_reason'] ?? '',
         ];
     }
+
+    /**
+     * Генерирует картинку по описанию. Сначала через Image API (/images, нужен моделям только для картинок,
+     * например qwen/qwen-image-*), если такого адреса для модели нет, то через chat/completions (Gemini и т. п.).
+     * @return array{data: string, mime: string} бинарные данные картинки и mime-тип
+     * @throws \RuntimeException
+     */
+    public function generateImage(string $prompt, array $options = []): array
+    {
+        $model = $options['model'] ?? 'google/gemini-2.5-flash-image';
+        $previousTimeout = $this->timeout;
+        $this->timeout = $options['timeout'] ?? 120;
+        try {
+            try {
+                try {
+                    $result = $this->request('/images', [
+                        'model'        => $model,
+                        'prompt'       => $prompt,
+                        'aspect_ratio' => $options['aspect_ratio'] ?? '16:9',
+                        'resolution'   => $options['resolution'] ?? '1K',
+                    ]);
+                } catch (\RuntimeException $e) {
+                    // модель не поддерживает формат или размер: просим без них, пусть выберет сама
+                    if (strpos($e->getMessage(), 'requested parameter') === false) {
+                        throw $e;
+                    }
+                    $result = $this->request('/images', ['model' => $model, 'prompt' => $prompt]);
+                }
+                $b64 = $result['data'][0]['b64_json'] ?? '';
+                $mime = $result['data'][0]['media_type'] ?? 'image/png';
+            } catch (\RuntimeException $e) {
+                // модель не поддерживает Image API: пробуем chat/completions
+                if (strpos($e->getMessage(), 'HTTP 404') === false && strpos($e->getMessage(), 'HTTP 405') === false) {
+                    throw $e;
+                }
+                $result = $this->request('/chat/completions', [
+                    'model'      => $model,
+                    'messages'   => [['role' => 'user', 'content' => $prompt]],
+                    'modalities' => $this->imageOnlyModel($model) ? ['image'] : ['image', 'text'],
+                ]);
+                $url = $result['choices'][0]['message']['images'][0]['image_url']['url'] ?? '';
+                if (!preg_match('~^data:(image/[a-z0-9.+-]+);base64,(.+)$~is', $url, $m)) {
+                    throw new \RuntimeException('OpenRouter не вернул картинку');
+                }
+                $mime = $m[1];
+                $b64 = $m[2];
+            }
+        } finally {
+            $this->timeout = $previousTimeout;
+        }
+
+        $data = base64_decode((string)$b64, true);
+        if ($data === false || $data === '') {
+            throw new \RuntimeException('OpenRouter не вернул картинку');
+        }
+        return ['data' => $data, 'mime' => strtolower((string)$mime)];
+    }
+
+    /** Модели, которые умеют только рисовать (без текстового ответа): им нужен modalities = ['image']. */
+    private function imageOnlyModel(string $model): bool
+    {
+        return (bool)preg_match('~^(black-forest-labs|sourceful|bytedance-seed)/~', $model);
+    }
 }
